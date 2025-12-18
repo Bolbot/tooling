@@ -7,8 +7,7 @@ import sys
 import subprocess
 import urllib.request
 from colorama import init as colorama_init
-from colorama import Fore
-from colorama import Style
+from colorama import Fore, Back, Style
 
 tooling_path: Final = Path(__file__).parent.absolute() / ".tools"
 venv_path   : Final = Path(__file__).parent.absolute() / ".venv"
@@ -57,18 +56,26 @@ def prime_uv():
 
     return uv_path
 
+def get_activation_hint():
+    if sys.platform == "win32":
+        return "cmd:\t\t.venv\\Scripts\\activate\n"\
+                "git-bash:\tsource .venv/Scripts/activate\n"\
+                "powershell:\t.\\.venv\\Scripts\\activate.ps1"
+    else:
+        return "source .venv/bin/activate"
+
 def main():
     colorama_init()
-    print("Bootstrap script")
+    print(f"Running bootstrap script {__file__}")
 
     local_uv = prime_uv()
-    correct_venv = running_in_native_venv()
-    if not correct_venv:
+    requires_activation = running_in_native_venv()
+    if not requires_activation:
         if venv_python.exists():
-            print(f"{Fore.RED}Not running in native virtual environment{Style.RESET_ALL}")
-            print(f"Run {Fore.GREEN}.venv\\Scripts\\activate" if sys.platform == "win32" else f"Run {Fore.GREEN} source .venv/bin/activate")
+            print(f"{Fore.RED}{Back.BLACK}{Style.BRIGHT}Not running in native virtual environment{Style.RESET_ALL}")
+            print(f"Activate your shell with the appropriate command\n{get_activation_hint()}")
             if (sys.platform == "win32"):
-                print(f"{Style.RESET_ALL}\n! Always execute this script as {Fore.GREEN}python bootstrap.py\n")
+                print(f"{Style.RESET_ALL}\n! Always execute this script as {Fore.GREEN}python3 bootstrap.py\n{Style.RESET_ALL}")
             #sys.exit(1)
         else:
             subprocess.run([local_uv, "venv"], check=True)
@@ -79,9 +86,9 @@ def main():
         print(f"Adding the requirements from {str(requirements_path)}")
         subprocess.run([local_uv, "pip", "install", "-r", str(requirements_path)], check=True)
 
-    if not correct_venv:
+    if not requires_activation:
         print(f"\n\nDon't forget to activate your environment:{Fore.GREEN}")
-        print("Run .venv\\Scripts\\activate" if sys.platform == "win32" else "Run source .venv/bin/activate")
+        print(get_activation_hint())
 
 if __name__ == "__main__":
     main()
