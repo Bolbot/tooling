@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-#!/usr/bin/env python
 
 from pathlib import Path
 from typing import Final
@@ -45,11 +44,12 @@ def prime_uv():
         #subprocess.run(["curl", "-L", uv_url, "-o", str(temp_archive)], check=True)
         urllib.request.urlretrieve(uv_url, str(temp_archive)) # we don't need curl actually
 
-        uv_dest = tooling_path / "uv"
-        if platform == "win32":
-            subprocess.run(["unzip", str(temp_archive), "-d", str(uv_dest)], check=True)
-        elif platform == "linux":
-            subprocess.run(["tar", "-xvf", str(temp_archive), "-C", str(tooling_path)])
+        unpack_destination = tooling_path # Path
+        if sys.platform == "win32":
+            unpack_destination = unpack_destination / "uv"
+            unpack_destination.mkdir(exist_ok=True)
+        subprocess.run(["tar", "-xvf", str(temp_archive), "-C", str(unpack_destination)])
+        if platform == "linux":
             dir_path = str(temp_archive).rsplit('.', 2)[0] # remove .tar.gz
             dir_path = Path(dir_path).absolute()
             dir_path.rename(dir_path.parent / "uv")
