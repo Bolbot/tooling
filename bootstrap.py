@@ -6,8 +6,10 @@ from typing import Final
 import sys
 import subprocess
 import urllib.request
-from colorama import init as colorama_init
-from colorama import Fore, Back, Style
+
+RED   : Final = "\033[31m"
+GREEN : Final = "\033[32m"
+RESET : Final = "\033[0m"
 
 tooling_path: Final = Path(__file__).parent.absolute() / ".tools"
 venv_path   : Final = Path(__file__).parent.absolute() / ".venv"
@@ -31,9 +33,9 @@ def prime_uv():
         try:
             archive_name = {
                 "win32" : "uv-x86_64-pc-windows-msvc.zip",
-                "darwin" : "uv-aarch64-apple-darwin.tar.gz",
+                "darwin": "uv-aarch64-apple-darwin.tar.gz",
                 "linux" : "uv-x86_64-unknown-linux-gnu.tar.gz"
-                }[platform]
+            }[platform]
         except KeyError:
             print("Unexpected platform. We support Windows (x64), MacOS (arm), and Linux (x64)")
             sys.exit(1)
@@ -59,24 +61,22 @@ def prime_uv():
 def get_activation_hint():
     if sys.platform == "win32":
         return "cmd:\t\t.venv\\Scripts\\activate\n"\
-                "git-bash:\tsource .venv/Scripts/activate\n"\
-                "powershell:\t.\\.venv\\Scripts\\activate.ps1"
+            "git-bash:\tsource .venv/Scripts/activate\n"\
+            "powershell:\t.\\.venv\\Scripts\\activate.ps1"
     else:
         return "source .venv/bin/activate"
 
 def main():
-    colorama_init()
     print(f"Running bootstrap script {__file__}")
 
     local_uv = prime_uv()
     requires_activation = running_in_native_venv()
     if not requires_activation:
         if venv_python.exists():
-            print(f"{Fore.RED}{Back.BLACK}{Style.BRIGHT}Not running in native virtual environment{Style.RESET_ALL}")
+            print(f"{RED}Not running in native virtual environment{RESET}")
             print(f"Activate your shell with the appropriate command\n{get_activation_hint()}")
-            if (sys.platform == "win32"):
-                print(f"{Style.RESET_ALL}\n! Always execute this script as {Fore.GREEN}python3 bootstrap.py\n{Style.RESET_ALL}")
-            #sys.exit(1)
+            if sys.platform == "win32":
+                print(f"\n! Always execute this script as {GREEN}python3 bootstrap.py\n{RESET}")
         else:
             subprocess.run([local_uv, "venv"], check=True)
             subprocess.run([local_uv, "pip", "install", "--upgrade", "pip"], check=True)
@@ -87,8 +87,7 @@ def main():
         subprocess.run([local_uv, "pip", "install", "-r", str(requirements_path)], check=True)
 
     if not requires_activation:
-        print(f"\n\nDon't forget to activate your environment:{Fore.GREEN}")
-        print(get_activation_hint())
+        print(f"\n\nDon't forget to activate your environment:{GREEN}\n{get_activation_hint()}{RESET}")
 
 if __name__ == "__main__":
     main()
