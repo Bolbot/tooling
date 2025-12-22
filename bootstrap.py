@@ -15,8 +15,10 @@ venv_path   : Final = Path(__file__).parent.absolute() / ".venv"
 venv_python : Final = venv_path / "Scripts/python.exe" if sys.platform == "win32" else venv_path / "bin/python"
 
 def running_in_native_venv() -> bool:
-    if Path(sys.executable).resolve() != venv_python.resolve():
-        print(f"Wrong python:\n  expected:  {venv_python}\n  actual:    {str(sys.executable)}")
+    if sys.prefix == sys.base_prefix:
+        print(f"Not running in virtual environment")
+        return False
+    if Path(sys.executable).absolute() != venv_python.absolute():
         return False
     return True
 
@@ -48,8 +50,8 @@ def prime_uv():
         if sys.platform == "win32":
             unpack_destination = unpack_destination / "uv"
             unpack_destination.mkdir(exist_ok=True)
-        subprocess.run(["tar", "-xvf", str(temp_archive), "-C", str(unpack_destination)])
-        if platform == "linux":
+        subprocess.run(["tar", "-xvf", str(temp_archive), "-C", str(unpack_destination)], check=True)
+        if platform == "linux" or platform == "darwin": # TODO: check MacOS
             dir_path = str(temp_archive).rsplit('.', 2)[0] # remove .tar.gz
             dir_path = Path(dir_path).absolute()
             dir_path.rename(dir_path.parent / "uv")
@@ -70,24 +72,24 @@ def main():
     print(f"Running bootstrap script {__file__}")
 
     local_uv = prime_uv()
-    requires_activation = running_in_native_venv()
-    if not requires_activation:
+    requires_activation = not running_in_native_venv()
+    if requires_activation:
         if venv_python.exists():
-            print(f"{RED}Not running in native virtual environment{RESET}")
-            print(f"Activate your shell with the appropriate command\n{get_activation_hint()}")
-            if sys.platform == "win32":
-                print(f"\n! Always execute this script as {GREEN}python3 bootstrap.py\n{RESET}")
+            print(f"{RED}Not running in native virtual environment{RESET}\n  expected:  {venv_python}\n  actual:    {str(sys.executable)}")
         else:
             subprocess.run([local_uv, "venv"], check=True)
             subprocess.run([local_uv, "pip", "install", "--upgrade", "pip"], check=True)
+        print(f"Activate your shell with the appropriate command\n{get_activation_hint()}")
+        if sys.platform == "win32":
+            print(f"\n! Always execute this script as {GREEN}python3 bootstrap.py\n{RESET}")
 
     requirements_path = Path(__file__).parent.resolve() / "requirements.txt"
     if requirements_path.exists():
         print(f"Adding the requirements from {str(requirements_path)}")
         subprocess.run([local_uv, "pip", "install", "-r", str(requirements_path)], check=True)
 
-    if not requires_activation:
-        print(f"\n\nDon't forget to activate your environment:{GREEN}\n{get_activation_hint()}{RESET}")
+    if requires_activation:
+        print(f"\n\nDon't forget to activate your virtual environment:{GREEN}\n{get_activation_hint()}{RESET}")
 
 if __name__ == "__main__":
     main()
