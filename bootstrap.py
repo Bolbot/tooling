@@ -5,6 +5,7 @@ from typing import Final
 import sys
 import subprocess
 import urllib.request
+import os
 
 RED   : Final = "\033[31m"
 GREEN : Final = "\033[32m"
@@ -57,6 +58,10 @@ def prime_uv():
             dir_path.rename(dir_path.parent / "uv")
         print("Downloaded and unpacked uv")
         temp_archive.unlink()
+
+    uv_cache_path = uv_path.resolve().parent / ".cache"
+    uv_cache_path.mkdir(exist_ok=True)
+    os.environ["UV_CACHE_DIR"] = str(uv_cache_path)
 
     return uv_path
 
