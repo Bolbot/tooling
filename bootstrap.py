@@ -117,7 +117,7 @@ def main():
     requires_activation = not running_in_native_venv()
     if requires_activation:
         if not venv_python.exists():
-            subprocess.run([local_uv, "venv"], check=True, cwd=main_project)
+            subprocess.run([local_uv, "venv", "--python", "3.13"], check=True, cwd=main_project)
             subprocess.run([local_uv, "pip", "install", "--upgrade", "pip"], check=True, cwd=main_project)
 
     requirements_path = prime_requirements()
