@@ -67,9 +67,20 @@ def build_cpp(cpp_directory, build_type):
             cwd=cpp_directory, check=True)
         subprocess.run(["cmake", "--build", str(build_dir)], cwd=cpp_directory, check=True)
 
+    # TODO: consider parsing config for C++ and Rust targets
     #targets = cpp_config.get("targets", ["all"])
     #print(f"Targets: {targets}")
 
+
+def build_rust(rust_directory, build_type):
+    print(f"Building {build_type} rust in {rust_directory}")
+
+    check_presence("cargo")
+
+    if build_type == "Release":
+        subprocess.run(["cargo", "build", "--release"], cwd=rust_directory, check=True)
+    else:
+        subprocess.run(["cargo", "build"], cwd=rust_directory, check=True)
 
 def main():
     arguments = argparse.ArgumentParser()
@@ -111,10 +122,10 @@ def main():
         for requested_config in build_configs:
             build_cpp(cpp_directory, requested_config)
 
-    """    TODO:
-            parse config for C++ and Rust targets
-            build Rust
-    """
+    if rust_config:
+        build_configs = ["Debug", "Release"] if specified_arguments.all_configs else [specified_arguments.config]
+        for requested_config in build_configs:
+            build_rust(rust_directory, requested_config)
 
 
 if __name__ == "__main__":
