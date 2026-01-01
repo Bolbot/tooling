@@ -44,10 +44,17 @@ def build_cpp(cpp_directory, build_type):
     if conanfile:
         print("Conan support is in progress")
 
+        profiles_directory = main_project / "tooling" / "conan_profiles"
+        conan_profile = profiles_directory / ("windows_ninja_clang" if sys.platform == "win32" else "linux_ninja_clang") # TODO: macOS
+        if not conan_profile.exists():
+            print(f"Could not find {Fore.RED}{conan_profile}{Style.RESET_ALL}\nCheck the tooling submodule integrity")
+            sys.exit(1)
+        else:
+            print(f"Using {conan_profile}")
+
         check_presence("conan")
         subprocess.run(["conan", "install", ".", "--build=missing",
-            "--profile", "ninja_clang",
-            #"--output-folder", str(build_dir), # redundant; implicit build is enough; manually adding it, nests it deeper
+            "--profile", str(conan_profile),
             "--settings", f"build_type={build_type}"],
             cwd=cpp_directory, check=True)
         cmake_preset = "conan-debug" if build_type == "Debug" else "conan-release"
@@ -106,7 +113,6 @@ def main():
 
     """    TODO:
             parse config for C++ and Rust targets
-            provide ninja profiles for conan
             build Rust
     """
 

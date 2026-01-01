@@ -1,0 +1,4 @@
+[settings]
+compiler=clang
+compiler.cppstd=14
+compiler.version=21
