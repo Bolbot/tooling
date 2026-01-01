@@ -40,24 +40,25 @@ def build_cpp(cpp_directory, build_type):
     check_presence("cmake")
     check_presence("ninja")
 
-    toolchain_arguments = []
-
     conanfile = get_conanfile(cpp_directory)
     if conanfile:
-        print("Conan detected but it's not yet supported...")
-        #sys.exit(0)
-        ## TODO: incorporate conan when basic ninja works
-        ##
-        #check_presence("conan")
-        #subprocess.run(["conan", "install", ".", "--build=missing",
-        #    "--profile", "ninja_clang",
-        #    "--output-folder", str(build_dir), "--settings", f"build_type={build_type}"],
-        #    cwd=cpp_directory, check=True)
-        #toolchain = build_dir / "build" / "generators" / "conan_toolchain.cmake"
-        #print(f"Toolchain directory:\t{str(toolchain.parent)}")
-        #toolchain_arguments.append(f"-DCMAKE_TOOLCHAIN_FILE={toolchain}")
+        print("Conan support is in progress")
 
-    #subprocess.run(["cmake", "-S", ".", "-B", str(build_dir), "-G", "Ninja", f"-DCMAKE_BUILD_TYPE={build_type}", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON", *toolchain_arguments], cwd=cpp_directory, check=True)
+        check_presence("conan")
+        subprocess.run(["conan", "install", ".", "--build=missing",
+            "--profile", "ninja_clang",
+            #"--output-folder", str(build_dir), # redundant; implicit build is enough; manually adding it, nests it deeper
+            "--settings", f"build_type={build_type}"],
+            cwd=cpp_directory, check=True)
+        cmake_preset = "conan-debug" if build_type == "Debug" else "conan-release"
+
+        subprocess.run(["cmake", "--preset", cmake_preset], cwd=cpp_directory, check=True)
+        subprocess.run(["cmake", "--build", "--preset", cmake_preset], cwd=cpp_directory, check=True)
+    else:
+        subprocess.run(["cmake", "-S", ".", "-B", str(build_dir), "-G", "Ninja",
+            f"-DCMAKE_BUILD_TYPE={build_type}", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"],
+            cwd=cpp_directory, check=True)
+        subprocess.run(["cmake", "--build", str(build_dir)], cwd=cpp_directory, check=True)
 
     #targets = cpp_config.get("targets", ["all"])
     #print(f"Targets: {targets}")
@@ -75,21 +76,7 @@ def main():
 
     cpp_config = config.get("cpp")
     cpp_directory = Path(cpp_config.get("path", "cpp")).resolve() if cpp_config else None
-
-    if cpp_config:
-        build_configs = ["Debug", "Release"] if specified_arguments.all_configs else [specified_arguments.config]
-        for requested_config in build_configs:
-            build_cpp(cpp_directory, requested_config)
-
-    """    TODO:
-            parse config for C++ and Rust targets
-            check C++ directory for conanfile.py or conanfile.txt
-            verify conan presence if it's required
-            based on conanfile, use either conan or cmake to generate with ninja
-            build C++ uniformely for conan/no-conan
-            build Rust
-    """
-
+    print(f"C++  directory: {cpp_directory}")
     rust_config = config.get("rust")
     rust_directory = Path(rust_config.get("path", "rust")).resolve() if rust_config else None
     print(f"Rust directory: {rust_directory}")
@@ -101,12 +88,27 @@ def main():
             if cpp_build_dir.exists():
                 print(f"C++:  {cpp_build_dir}")
                 shutil.rmtree(cpp_build_dir)
-            # TODO: add temp conan presets
+            disposable_presets = cpp_directory / "CMakeUserPresets.json"
+            if disposable_presets.exists():
+                print(f"      {disposable_presets}")
+                disposable_presets.unlink()
         if rust_directory:
             rust_build_dir = rust_directory / "target"
             if rust_build_dir.exists():
                 print(f"Rust: {rust_build_dir}")
                 shutil.rmtree(rust_build_dir)
+        sys.exit(0)
+
+    if cpp_config:
+        build_configs = ["Debug", "Release"] if specified_arguments.all_configs else [specified_arguments.config]
+        for requested_config in build_configs:
+            build_cpp(cpp_directory, requested_config)
+
+    """    TODO:
+            parse config for C++ and Rust targets
+            provide ninja profiles for conan
+            build Rust
+    """
 
 
 if __name__ == "__main__":
