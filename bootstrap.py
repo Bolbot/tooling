@@ -30,7 +30,20 @@ def propagate_justfile():
             "Usage:\n\tjust --list\n")
         shutil.copyfile(str(justfile_source), str(main_justfile))
     else:
-        print(f"{YELLOW}Found .justfile in {main_project}{RESET}\nExamine tooling/.justfile to verify yours is relevant")
+        print(f"Found {YELLOW}{main_justfile}{RESET}\nExamine {justfile_source} to verify yours is relevant")
+
+
+def propagate_paths():
+    config_source = Path(__file__).resolve().parent / "project_paths.toml"
+
+    main_config = main_project / "project_paths.toml"
+    if not main_config.exists():
+        print(f"Adding {GREEN}project_path.toml{RESET} to {main_project}\n"\
+            f"{YELLOW}Fill it with relative paths to your C++ and Rust directories!{RESET}\n"\
+            f"Don't forget to add it to your VCS (e. g. {GREEN}git add project_paths.toml{RESET})")
+        shutil.copyfile(str(config_source), str(main_config))
+    else:
+        print(f"Found {YELLOW} {main_config}{RESET}\nMake sure it has relevant paths")
 
 
 def running_in_native_venv() -> bool:
@@ -112,6 +125,8 @@ def main():
     print(f"Running bootstrap script {__file__}")
 
     propagate_justfile()
+
+    propagate_paths()
 
     local_uv = prime_uv()
     requires_activation = not running_in_native_venv()
