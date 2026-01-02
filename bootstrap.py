@@ -33,6 +33,9 @@ def propagate_justfile():
     elif not filecmp.cmp(justfile_source, main_justfile):
         print(f"Found {YELLOW}{main_justfile}{RESET}\nExamine {justfile_source} to verify yours is relevant")
 
+    if not shutil.which("just"):
+        print(f"{YELLOW}just is missing. Install just 1.27 or later to use just commands{RESET}")
+
 
 def propagate_paths():
     config_source = Path(__file__).resolve().parent / "project_paths.toml"
@@ -122,6 +125,13 @@ def prime_requirements():
     return requirements_path
 
 
+def check_ide():
+    if not shutil.which("code"):
+        print(f"{YELLOW}Visual Studio Code can not be found.{RESET} Install it to use `just vscode` command (optional)")
+    if not shutil.which("zed"):
+        print("Zed can not be found. Install it to use `just zed` command (optional)")
+
+
 def main():
     print(f"Running bootstrap script {__file__}")
 
@@ -139,6 +149,8 @@ def main():
     requirements_path = prime_requirements()
     print(f"Adding the requirements from {str(requirements_path)}")
     subprocess.run([local_uv, "pip", "install", "-r", str(requirements_path)], check=True, cwd=main_project)
+
+    check_ide()
 
     if requires_activation:
         print(f"\n\nDon't forget to activate your virtual environment:{GREEN}\n{get_activation_hint()}{RESET}")

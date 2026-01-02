@@ -1,7 +1,3 @@
-# Preliminary setting
-set windows-shell := ["cmd.exe", "/C"]
-
-
 # Building part
 
 alias b := build
@@ -53,3 +49,4 @@ vscode:
 [doc("Launches Zed from the project's root directory")]
 zed:
     zed . > /dev/null &
+
