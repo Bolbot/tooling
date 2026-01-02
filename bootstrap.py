@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import filecmp
 from pathlib import Path
 from typing import Final
 import sys
@@ -29,7 +30,7 @@ def propagate_justfile():
             f"Don't forget to add it to your VCS (e. g. {GREEN}git add .justfile{RESET})\n"\
             "Usage:\n\tjust --list\n")
         shutil.copyfile(str(justfile_source), str(main_justfile))
-    else:
+    elif not filecmp.cmp(justfile_source, main_justfile):
         print(f"Found {YELLOW}{main_justfile}{RESET}\nExamine {justfile_source} to verify yours is relevant")
 
 

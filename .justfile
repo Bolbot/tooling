@@ -1,6 +1,31 @@
 # Preliminary setting
 set windows-shell := ["cmd.exe", "/C"]
 
+
+# Building part
+
+alias b := build
+alias c := clean
+alias d := debug
+alias r := release
+
+[doc("Builds the last used configuration. For the fresh run, builds both Debug and Release")]
+build:
+    python tooling/build.py || python3 tooling/build.py
+
+[doc("Cleans the temporary build artifacts for C++ and Rust")]
+clean:
+    python tooling/build.py --clean || python3 tooling/build.py --clean
+
+[doc("Builds Debug configuration for C++ and Rust")]
+debug:
+    python tooling/build.py --config=Debug || python3 tooling/build.py --config=Debug
+
+[doc("Builds Release configuration for C++ and Rust")]
+release:
+    python tooling/build.py --config=Release || python3 tooling/build.py --config=Release
+
+
 # Bootstrapping part
 
 alias s := setup
@@ -16,25 +41,15 @@ teardown:
     rm -rf .venv .tools
 
 
+# IDE part
 
-# Building part
+alias v := vscode
+alias z := zed
 
-[doc("Runs build.py --config=Debug to build the Debug configuration for C++ and Rust")]
-debug:
-    python tooling/build.py --config=Debug || python3 tooling/build.py --config=Debug
+[doc("Launches Visual Studio Code from the project's root directory")]
+vscode:
+    code .
 
-[doc("Runs build.py --config=Release to build the Release configuration for C++ and Rust")]
-release:
-    python tooling/build.py --config=Release || python3 tooling/build.py --config=Release
-
-[doc("Runs build.py --all-configs to build both Debug and Release configurations for C++ and Rust")]
-both:
-    python tooling/build.py --all-configs || python3 tooling/build.py --all-configs
-
-[doc("Rebuilds the configuration that was built last (Debug or Release)")]
-rebuild:
-    echo "Work In Progress"
-
-[doc("Runs build.py --clean to clean the temporary build artifacts C++ and Rust")]
-clean:
-    python tooling/build.py --clean || python3 tooling/build.py --clean
+[doc("Launches Zed from the project's root directory")]
+zed:
+    zed . > /dev/null &
