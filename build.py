@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-#from random import choices
 from typing import Final
 from pathlib import Path
 from colorama import Fore, Style
@@ -105,17 +104,28 @@ def get_last_used_config():
         return None
     return config
 
+
 def set_last_used_config(build_type):
     last_used.write_text(build_type)
 
+
+def get_verified_directory(global_config, project_language):
+    config = global_config.get(project_language)
+    if not config:
+        print(f"No path to {project_language} in {config_file}. {Fore.YELLOW}Skipping {project_language}{Style.RESET_ALL}")
+        return None
+    directory = Path(config.get("path", project_language)).resolve()
+    if not directory.exists():
+        print(f"{Fore.RED}{project_language} path does not exist: {Style.RESET_ALL}{directory}")
+        print(f"Make sure your {config_file} specifies existing directory for {project_language}")
+        sys.exit(1)
+    return directory
+
+
 def main():
     config = load_config()
-    cpp_config = config.get("cpp")
-    cpp_directory = Path(cpp_config.get("path", "cpp")).resolve() if cpp_config else None
-    print(f"C++  directory: {cpp_directory}")
-    rust_config = config.get("rust")
-    rust_directory = Path(rust_config.get("path", "rust")).resolve() if rust_config else None
-    print(f"Rust directory: {rust_directory}")
+    cpp_directory = get_verified_directory(config, "cpp")
+    rust_directory = get_verified_directory(config, "rust")
 
     arguments = argparse.ArgumentParser()
     arguments.add_argument("--config", choices=["Debug", "Release"])
@@ -127,9 +137,9 @@ def main():
         build_type = get_last_used_config()
         if build_type:
             print(f"Rebuilding the last build: {build_type}")
-            if cpp_config:
+            if cpp_directory:
                 build_cpp(cpp_directory, build_type)
-            if rust_config:
+            if rust_directory:
                 build_rust(rust_directory, build_type)
             sys.exit(0)
 
@@ -156,12 +166,12 @@ def main():
 
     build_configs = [specified_arguments.config] if specified_arguments.config else ["Release", "Debug"]
     print(f"Build configs: {build_configs}")
-    if cpp_config:
+    if cpp_directory:
         for build_type in build_configs:
             generate_cpp(cpp_directory, build_type)
             build_cpp(cpp_directory, build_type)
 
-    if rust_config:
+    if rust_directory:
         for build_type in build_configs:
             build_rust(rust_directory, build_type)
 
