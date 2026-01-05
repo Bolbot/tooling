@@ -8,6 +8,7 @@ import sys
 import tomllib
 import shutil
 import subprocess
+from _platform_specific import ninja_profile_name
 
 main_project: Final = Path(__file__).parent.absolute().parent
 config_file:  Final = main_project / "project_paths.toml"
@@ -45,7 +46,7 @@ def generate_cpp(cpp_directory, build_type):
         print("Conan support is in progress")
 
         profiles_directory = main_project / "tooling" / "conan_profiles"
-        conan_profile = profiles_directory / ("windows_ninja_clang" if sys.platform == "win32" else "linux_ninja_clang") # TODO: macOS
+        conan_profile = profiles_directory / ninja_profile_name()
         if not conan_profile.exists():
             print(f"Could not find {Fore.RED}{conan_profile}{Style.RESET_ALL}\nCheck the tooling submodule integrity")
             sys.exit(1)

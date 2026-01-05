@@ -5,10 +5,8 @@ from pathlib import Path
 from typing import Final
 import sys
 import subprocess
-import urllib.request
-import os
 import shutil
-
+from _platform_specific import python_in_venv, prime_uv, get_activation_hint
 
 RED    : Final = "\033[31m"
 YELLOW : Final = "\033[33m"
@@ -16,9 +14,8 @@ GREEN  : Final = "\033[32m"
 RESET  : Final = "\033[0m"
 
 main_project: Final = Path(__file__).parent.absolute().parent
-tooling_path: Final = main_project / ".tools"
 venv_path   : Final = main_project / ".venv"
-venv_python : Final = venv_path / "Scripts/python.exe" if sys.platform == "win32" else venv_path / "bin/python"
+venv_python : Final = venv_path / python_in_venv()
 
 
 def propagate_justfile():
@@ -58,58 +55,6 @@ def running_in_native_venv() -> bool:
         print(f"{RED}Running in unrelated virtual environment{RESET}\n\texpected:  {venv_python}\n\tactual:    {str(sys.executable)}")
         return False
     return True
-
-
-def prime_uv():
-    uv_path = tooling_path / "uv" / ("uv.exe" if sys.platform == "win32" else "uv")
-
-    if not uv_path.exists():
-        print("Obtaining local copy of uv...")
-        tooling_path.mkdir(exist_ok=True)
-
-        platform = sys.platform
-
-        try:
-            archive_name = {
-                "win32" : "uv-x86_64-pc-windows-msvc.zip",
-                "darwin": "uv-aarch64-apple-darwin.tar.gz",
-                "linux" : "uv-x86_64-unknown-linux-gnu.tar.gz"
-            }[platform]
-        except KeyError:
-            print("Unexpected platform. We support Windows (x64), MacOS (arm), and Linux (x64)")
-            sys.exit(1)
-        uv_url = "https://github.com/astral-sh/uv/releases/download/0.9.18/" + archive_name
-
-        temp_archive = tooling_path / archive_name
-        #subprocess.run(["curl", "-L", uv_url, "-o", str(temp_archive)], check=True)
-        urllib.request.urlretrieve(uv_url, str(temp_archive)) # we don't need curl actually
-
-        unpack_destination = tooling_path # Path
-        if sys.platform == "win32":
-            unpack_destination = unpack_destination / "uv"
-            unpack_destination.mkdir(exist_ok=True)
-        subprocess.run(["tar", "-xvf", str(temp_archive), "-C", str(unpack_destination)], check=True)
-        if platform == "linux" or platform == "darwin": # TODO: check MacOS
-            dir_path = str(temp_archive).rsplit('.', 2)[0] # remove .tar.gz
-            dir_path = Path(dir_path).absolute()
-            dir_path.rename(dir_path.parent / "uv")
-        print("Downloaded and unpacked uv")
-        temp_archive.unlink()
-
-    uv_cache_path = uv_path.resolve().parent / ".cache"
-    uv_cache_path.mkdir(exist_ok=True)
-    os.environ["UV_CACHE_DIR"] = str(uv_cache_path)
-
-    return uv_path
-
-
-def get_activation_hint():
-    if sys.platform == "win32":
-        return "cmd:\t\t.venv\\Scripts\\activate\n"\
-            "git-bash:\tsource .venv/Scripts/activate\n"\
-            "powershell:\t.\\.venv\\Scripts\\activate.ps1"
-    else:
-        return "source .venv/bin/activate"
 
 
 def prime_requirements():
