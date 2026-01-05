@@ -3,3 +3,6 @@ path = "cpp"
 
 [rust]
 path = "rust"
+
+[test]
+path = "your_test_script.py"

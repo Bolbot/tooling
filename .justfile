@@ -37,6 +37,13 @@ teardown:
     rm -rf .venv .tools
 
 
+# Validation part
+
+[doc("Runs the specified testing script provided via project_paths.toml")]
+validate:
+    python tooling/validate.py || python3 tooling/validate.py
+
+
 # IDE part
 
 alias v := vscode
