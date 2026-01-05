@@ -4,6 +4,7 @@ import urllib.request
 import os
 import subprocess
 
+
 def python_in_venv():
     return "Scripts/python.exe" if sys.platform == "win32" else "bin/python"
 
@@ -16,7 +17,6 @@ def prime_uv():
     if not uv_path.exists():
         print("Obtaining local copy of uv...")
         tooling_path.mkdir(exist_ok=True)
-
 
         try:
             archive_name = {
@@ -42,7 +42,7 @@ def prime_uv():
             dir_path = str(temp_archive).rsplit('.', 2)[0] # remove .tar.gz
             dir_path = Path(dir_path).absolute()
             dir_path.rename(dir_path.parent / "uv")
-        print("Downloaded and unpacked uv")
+        print("Successfully downloaded and unpacked uv")
         temp_archive.unlink()
 
     uv_cache_path = uv_path.resolve().parent / ".cache"
@@ -74,7 +74,7 @@ def ninja_profile_name():
         sys.exit(1)
 
 
-def get_gdb_hint():
+def get_lldb_hint():
     if sys.platform == "win32":
         return "Download and install `MSYS2-x86_64`, launch and run:"\
             "\n\tpacman -Syu\n\tpacman -S --needed base-devel mingw-w64-clang-x86_64-toolchain"\

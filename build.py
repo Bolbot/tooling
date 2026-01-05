@@ -3,36 +3,14 @@
 import argparse
 from typing import Final
 from pathlib import Path
-from colorama import Fore, Style
+from _text_colors import RED, YELLOW, BLUE, RESET
 import sys
 import tomllib
 import shutil
 import subprocess
 from _platform_specific import ninja_profile_name, get_lldb_hint
-
-main_project: Final = Path(__file__).parent.absolute().parent
-config_file:  Final = main_project / "project_paths.toml"
-last_used:    Final = main_project / ".tools" / "last_built_config.txt"
-
-def check_presence(tool, required=True):
-    if shutil.which(tool) is None and required:
-        print(f"{Fore.RED}Failed to find {tool}. Can not proceed{Style.RESET_ALL}")
-        sys.exit(1)
-    return shutil.which(tool) is not None
-
-def load_config():
-    if not config_file.exists():
-        print(f"{Fore.RED}Could not find {str(config_file)}{Style.RESET_ALL}\nRerun {Fore.GREEN}just setup{Style.RESET_ALL}")
-        sys.exit(1)
-    print(f"Found {Fore.LIGHTBLUE_EX}{str(config_file)}{Style.RESET_ALL}")
-    return tomllib.loads(config_file.read_text())
-
-def get_conanfile(cpp_directory):
-    result = cpp_directory / "conanfile.txt"
-    if result.exists():
-        return result
-    result = cpp_directory / "conanfile.py"
-    return result if result.exists() else None
+from _resource_manager import get_conanfile, get_profile_directory, check_presence, get_verified_path
+from _resource_manager import load_config, get_last_used_config, set_last_used_config
 
 
 def generate_cpp(cpp_directory, build_type):
@@ -41,18 +19,16 @@ def generate_cpp(cpp_directory, build_type):
 
     check_presence("cmake")
     check_presence("ninja")
-    if not check_presence("lldb"):
-        print(f"{Fore.YELLOW}Could not find lldb{Style.RESET_ALL}\nInstall it if you need to debug:\n{get_lldb_hint()}")
+    if not check_presence("lldb", False):
+        print(f"{YELLOW}Could not find lldb{RESET}\nInstall it if you need to debug:\n{get_lldb_hint()}")
     check_presence("clang")
 
     conanfile = get_conanfile(cpp_directory)
     if conanfile:
-        print("Conan support is in progress")
-
-        profiles_directory = main_project / "tooling" / "conan_profiles"
+        profiles_directory = get_profile_directory()
         conan_profile = profiles_directory / ninja_profile_name()
         if not conan_profile.exists():
-            print(f"Could not find {Fore.RED}{conan_profile}{Style.RESET_ALL}\nCheck the tooling submodule integrity")
+            print(f"Could not find {RED}{conan_profile}{RESET}\nCheck the tooling submodule integrity")
             sys.exit(1)
         else:
             print(f"Using {conan_profile}")
@@ -99,38 +75,10 @@ def build_rust(rust_directory, build_type):
     set_last_used_config(build_type)
 
 
-def get_last_used_config():
-    if not last_used.exists():
-        return None
-    config = last_used.read_text()
-    if config != "Debug" and config != "Release":
-        print(f"{Fore.RED}Broken {str(config)}{Style.RESET_ALL}\nRemoving it and building from scratch")
-        last_used.unlink()
-        return None
-    return config
-
-
-def set_last_used_config(build_type):
-    last_used.write_text(build_type)
-
-
-def get_verified_directory(global_config, project_language):
-    config = global_config.get(project_language)
-    if not config:
-        print(f"No path to {project_language} in {config_file}. {Fore.YELLOW}Skipping {project_language}{Style.RESET_ALL}")
-        return None
-    directory = Path(config.get("path", project_language)).resolve()
-    if not directory.exists():
-        print(f"{Fore.RED}{project_language} path does not exist: {Style.RESET_ALL}{directory}")
-        print(f"Make sure your {config_file} specifies existing directory for {project_language}")
-        sys.exit(1)
-    return directory
-
-
 def main():
     config = load_config()
-    cpp_directory = get_verified_directory(config, "cpp")
-    rust_directory = get_verified_directory(config, "rust")
+    cpp_directory = get_verified_path(config, "cpp")
+    rust_directory = get_verified_path(config, "rust")
 
     arguments = argparse.ArgumentParser()
     arguments.add_argument("--config", choices=["Debug", "Release"])
@@ -141,7 +89,7 @@ def main():
         # if there was last used, rebuild it, and bail; otherwise, fallback to the initial dual build later on
         build_type = get_last_used_config()
         if build_type:
-            print(f"Rebuilding the last build: {build_type}")
+            print(f"{BLUE}Rebuilding {build_type}{RESET}")
             if cpp_directory:
                 build_cpp(cpp_directory, build_type)
             if rust_directory:
@@ -164,9 +112,7 @@ def main():
             if rust_build_dir.exists():
                 print(f"Rust: {rust_build_dir}")
                 shutil.rmtree(rust_build_dir)
-        if last_used.exists():
-            print(f"Meta: {last_used}")
-            last_used.unlink()
+        set_last_used_config(None)
         sys.exit(0)
 
     build_configs = [specified_arguments.config] if specified_arguments.config else ["Release", "Debug"]
