@@ -72,3 +72,17 @@ def ninja_profile_name():
     else:
         print("Unexpected platform. We support Windows (x64), MacOS (arm), and Linux (x64)")
         sys.exit(1)
+
+
+def get_gdb_hint():
+    if sys.platform == "win32":
+        return "Download and install `MSYS2-x86_64`, launch and run:"\
+            "\n\tpacman -Syu\n\tpacman -S --needed base-devel mingw-w64-clang-x86_64-toolchain"\
+            "\nAdd the path to clang64/bin to your PATH"
+    elif sys.platform == "linux":
+       return "\twget https://apt.llvm.org/llvm.sh\n\tchmod +x llvm.sh\n\tsudo ./llvm.sh 21\n\tsudo apt install clang-21 lldb-21"
+    elif sys.platform == "darwin":
+        return "\tbrew install llvm@21\n\texport PATH=\"/opt/homebrew/opt/llvm@21/bin:$PATH\""
+    else:
+        print("Unexpected platform. We support Windows (x64), MacOS (arm), and Linux (x64)")
+        sys.exit(1)

@@ -8,16 +8,17 @@ import sys
 import tomllib
 import shutil
 import subprocess
-from _platform_specific import ninja_profile_name
+from _platform_specific import ninja_profile_name, get_lldb_hint
 
 main_project: Final = Path(__file__).parent.absolute().parent
 config_file:  Final = main_project / "project_paths.toml"
 last_used:    Final = main_project / ".tools" / "last_built_config.txt"
 
-def check_presence(tool):
-    if shutil.which(tool) is None:
+def check_presence(tool, required=True):
+    if shutil.which(tool) is None and required:
         print(f"{Fore.RED}Failed to find {tool}. Can not proceed{Style.RESET_ALL}")
         sys.exit(1)
+    return shutil.which(tool) is not None
 
 def load_config():
     if not config_file.exists():
@@ -40,6 +41,9 @@ def generate_cpp(cpp_directory, build_type):
 
     check_presence("cmake")
     check_presence("ninja")
+    if not check_presence("lldb"):
+        print(f"{Fore.YELLOW}Could not find lldb{Style.RESET_ALL}\nInstall it if you need to debug:\n{get_lldb_hint()}")
+    check_presence("clang")
 
     conanfile = get_conanfile(cpp_directory)
     if conanfile:
