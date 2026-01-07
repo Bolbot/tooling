@@ -1,5 +1,5 @@
-include(gcc)
-include(ninja)
+include(components/gcc)
+include(components/ninja)
 
 [settings]
 arch=x86_64

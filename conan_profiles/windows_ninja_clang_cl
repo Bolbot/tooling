@@ -1,0 +1,12 @@
+include(windows_ninja_clang)
+
+[settings]
+# MSVC LLVM is lagging behind, hence older version
+compiler.version=19
+compiler.runtime=dynamic
+compiler.runtime_type=Release
+compiler.runtime_version=v144
+
+[conf]
+# relies on CLANG_CL_PATH environment variable inferred by our scripts
+tools.build:compiler_executables={"c": "CLANG_CL_PATH", "cpp": "CLANG_CL_PATH"}

@@ -1,5 +1,5 @@
-include(clang)
-include(ninja)
+include(components/clang)
+include(components/ninja)
 
 [settings]
 arch=x86_64
