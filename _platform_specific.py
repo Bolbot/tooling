@@ -5,6 +5,9 @@ import os
 import subprocess
 
 
+optional_environment = None
+
+
 def python_in_venv():
     return "Scripts/python.exe" if sys.platform == "win32" else "bin/python"
 
@@ -86,3 +89,31 @@ def get_lldb_hint():
     else:
         print("Unexpected platform. We support Windows (x64), MacOS (arm), and Linux (x64)")
         sys.exit(1)
+
+
+def get_optional_environment():
+    if sys.platform != "win32":
+        return None
+
+    global optional_environment
+    if optional_environment is not None:
+        return optional_environment
+
+    vswhere = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
+    if not vswhere.exists():
+        return None
+
+    vs_path = subprocess.run([str(vswhere), "-property", "installationPath"], capture_output=True, text=True)
+    activator_path = Path(vs_path.stdout.strip()).resolve() / "VC" / "Auxiliary" / "Build" / "vcvars64.bat"
+    if not activator_path.exists():
+        return None
+
+    environment = os.environ.copy()
+    msv_updates = subprocess.run(["cmd.exe", "/c", str(activator_path), "&&", "set"], capture_output=True, text=True)
+    for line in msv_updates.stdout.split('\n'):
+        if '=' in line:
+            key, value = line.split('=', 1)
+            environment[key] = value.strip()
+
+    optional_environment = environment
+    return optional_environment

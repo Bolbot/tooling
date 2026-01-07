@@ -8,7 +8,7 @@ import sys
 import tomllib
 import shutil
 import subprocess
-from _platform_specific import get_lldb_hint
+from _platform_specific import get_lldb_hint, get_optional_environment
 from _resource_manager import get_conanfile, get_conan_profile, check_presence, get_verified_path
 from _resource_manager import load_config, get_last_used_config, set_last_used_config
 
@@ -34,6 +34,7 @@ def generate_cpp(cpp_directory, build_type):
         subprocess.run(["conan", "install", ".", "--build=missing",
             "--profile", str(conan_profile),
             "--settings", f"build_type={build_type}"],
+            env=get_optional_environment(),
             cwd=cpp_directory, check=True)
     else:
         subprocess.run(["cmake", "-S", ".", "-B", str(build_dir), "-G", "Ninja",
@@ -48,8 +49,8 @@ def build_cpp(cpp_directory, build_type):
     conanfile = get_conanfile(cpp_directory)
     if conanfile:
         cmake_preset = "conan-debug" if build_type == "Debug" else "conan-release"
-        subprocess.run(["cmake", "--preset", cmake_preset], cwd=cpp_directory, check=True)
-        subprocess.run(["cmake", "--build", "--preset", cmake_preset], cwd=cpp_directory, check=True)
+        subprocess.run(["cmake", "--preset", cmake_preset], env=get_optional_environment(), cwd=cpp_directory, check=True)
+        subprocess.run(["cmake", "--build", "--preset", cmake_preset], env=get_optional_environment(), cwd=cpp_directory, check=True)
     else:
         subprocess.run(["cmake", "--build", str(build_dir)], cwd=cpp_directory, check=True)
 

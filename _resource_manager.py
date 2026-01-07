@@ -45,9 +45,9 @@ def resolve_resource(file_name, additional_text=""):
     fallback = Path(__file__).resolve().parent / file_name
 
     if not expected.exists():
-        print(f"{YELLOW}Haven't found {file_name}{RESET} in {main_project}. Adding a fallback {file_name}")
+        print(f"{YELLOW}Haven't found {file_name}{RESET} in {main_project}")
+        print(f"Adding a fallback {file_name}: {additional_text}")
         print(f"Don't forget to add it to your VCS: {GREEN}git add {file_name}{RESET}")
-        print(additional_text)
         shutil.copyfile(str(fallback), str(expected))
 
 

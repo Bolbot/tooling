@@ -29,9 +29,9 @@ def check_optional_utils():
 
 
 def main():
-    resolve_resource(".justfile", "For usage tips see:\n\tjust --list\n")
-    resolve_resource("project_paths.toml", "Make sure it contains valid paths to your C++, Rust, and test script")
-    resolve_resource("requirements.txt", "Update it with actual requirements of your project")
+    resolve_resource(".justfile", "for usage tips see:\n\tjust --list\n")
+    resolve_resource("project_paths.toml", "make sure it contains valid paths to your C++, Rust, and test script")
+    resolve_resource("requirements.txt", "update it with actual requirements of your project")
     check_optional_utils()
 
     local_uv = prime_uv()
