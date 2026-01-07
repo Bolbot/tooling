@@ -8,8 +8,8 @@ import sys
 import tomllib
 import shutil
 import subprocess
-from _platform_specific import ninja_profile_name, get_lldb_hint
-from _resource_manager import get_conanfile, get_profile_directory, check_presence, get_verified_path
+from _platform_specific import get_lldb_hint
+from _resource_manager import get_conanfile, get_conan_profile, check_presence, get_verified_path
 from _resource_manager import load_config, get_last_used_config, set_last_used_config
 
 
@@ -25,13 +25,10 @@ def generate_cpp(cpp_directory, build_type):
 
     conanfile = get_conanfile(cpp_directory)
     if conanfile:
-        profiles_directory = get_profile_directory()
-        conan_profile = profiles_directory / ninja_profile_name()
+        conan_profile = get_conan_profile()
         if not conan_profile.exists():
             print(f"Could not find {RED}{conan_profile}{RESET}\nCheck the tooling submodule integrity")
             sys.exit(1)
-        else:
-            print(f"Using {conan_profile}")
 
         check_presence("conan")
         subprocess.run(["conan", "install", ".", "--build=missing",

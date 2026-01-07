@@ -3,7 +3,7 @@ from typing import Final
 import shutil
 import sys
 import tomllib
-from _platform_specific import python_in_venv
+from _platform_specific import python_in_venv, ninja_profile_name
 from _text_colors import RED, YELLOW, GREEN, BLUE, RESET
 
 main_project: Final = Path(__file__).parent.absolute().parent
@@ -26,8 +26,18 @@ def get_requirements_path():
     return requirements
 
 
-def get_profile_directory():
-    return profiles_dir
+def get_conan_profile():
+    fallback_profile = profiles_dir / ninja_profile_name()
+    config = load_config().get("cpp")
+    profile_path = Path(config.get("profile", "No profile entry in cpp section"))
+    if profile_path.resolve().exists():
+        print(f"Using {profile_path} conan profile")
+        return profile_path.resolve()
+    else:
+        print(f"{YELLOW}Conan profile does not exist: {RESET}{profile_path}")
+        print(f"Make sure {config_file} contains profile in cpp section")
+        print(f"{YELLOW}Trying to apply the fallback: {RESET}{fallback_profile}")
+        return fallback_profile
 
 
 def resolve_resource(file_name, additional_text=""):
