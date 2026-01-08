@@ -117,3 +117,21 @@ def get_optional_environment():
 
     optional_environment = environment
     return optional_environment
+
+
+def build_and_verify(build_command, cpp_directory):
+    retries = 5 if sys.platform == "win32" else 1
+
+    while retries > 0:
+        result = subprocess.run(build_command, env=get_optional_environment(), cwd=cpp_directory, stdout=subprocess.PIPE, text=True)
+        if result.returncode == 0:
+            break
+
+        retries -= 1
+        if "ninja: error: failed recompaction: Permission denied" in result.stdout and retries > 0:
+            print(f"Ninja spuriously fails the Windows build. Retrying {retries} more time{ "s" if retries > 1 else "" }...")
+        else:
+            retries = 0
+
+    print(f"{result.stdout}")
+    return retries > 0

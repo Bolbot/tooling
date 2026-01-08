@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-from typing import Final
-from pathlib import Path
-from _text_colors import RED, YELLOW, BLUE, RESET
+from _text_colors import RED, YELLOW, GREEN, BLUE, RESET
 import sys
-import tomllib
 import shutil
 import subprocess
-from _platform_specific import get_lldb_hint, get_optional_environment
+from _platform_specific import build_and_verify, get_lldb_hint, get_optional_environment
 from _resource_manager import get_conanfile, get_conan_profile, check_presence, get_verified_path
 from _resource_manager import load_config, get_last_used_config, set_last_used_config
 
@@ -46,15 +43,22 @@ def build_cpp(cpp_directory, build_type):
     build_dir = cpp_directory / "build" / build_type
     print(f"C++ build directory:\t{build_dir}")
 
+    build_command = ["cmake", "--build"]
+
     conanfile = get_conanfile(cpp_directory)
     if conanfile:
         cmake_preset = "conan-debug" if build_type == "Debug" else "conan-release"
         subprocess.run(["cmake", "--preset", cmake_preset], env=get_optional_environment(), cwd=cpp_directory, check=True)
-        subprocess.run(["cmake", "--build", "--preset", cmake_preset], env=get_optional_environment(), cwd=cpp_directory, check=True)
+        build_command += ["--preset", cmake_preset]
     else:
-        subprocess.run(["cmake", "--build", str(build_dir)], cwd=cpp_directory, check=True)
+        build_command.append(build_dir)
 
-    set_last_used_config(build_type)
+    if build_and_verify(build_command, cpp_directory):
+        print(f"{GREEN}Successful C++ build{RESET} with {" ".join(build_command)}\n")
+        set_last_used_config(build_type)
+    else:
+        print(f"{RED}Failed to build C++{RESET} with {" ".join(build_command)}\n")
+
     # TODO: consider parsing config for C++ and Rust targets
     #targets = cpp_config.get("targets", ["all"])
     #print(f"Targets: {targets}")
