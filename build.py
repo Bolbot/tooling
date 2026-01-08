@@ -10,6 +10,9 @@ from _resource_manager import get_conanfile, get_conan_profile, check_presence, 
 from _resource_manager import load_config, get_last_used_config, set_last_used_config
 
 
+success = True
+
+
 def generate_cpp(cpp_directory, build_type):
     build_dir = cpp_directory / "build" / build_type
     print(f"C++ build directory:\t{build_dir}")
@@ -55,9 +58,10 @@ def build_cpp(cpp_directory, build_type):
 
     if build_and_verify(build_command, cpp_directory):
         print(f"{GREEN}Successful C++ build{RESET} with {" ".join(build_command)}\n")
-        set_last_used_config(build_type)
     else:
         print(f"{RED}Failed to build C++{RESET} with {" ".join(build_command)}\n")
+        global success
+        success = False
 
     # TODO: consider parsing config for C++ and Rust targets
     #targets = cpp_config.get("targets", ["all"])
@@ -73,8 +77,6 @@ def build_rust(rust_directory, build_type):
         subprocess.run(["cargo", "build", "--release"], cwd=rust_directory, check=True)
     else:
         subprocess.run(["cargo", "build"], cwd=rust_directory, check=True)
-
-    set_last_used_config(build_type)
 
 
 def main():
@@ -96,7 +98,9 @@ def main():
                 build_cpp(cpp_directory, build_type)
             if rust_directory:
                 build_rust(rust_directory, build_type)
-            sys.exit(0)
+            if success:
+                set_last_used_config(build_type)
+                return
 
     if specified_arguments.clean:
         print("Deleting the following paths:")
@@ -115,19 +119,21 @@ def main():
                 print(f"Rust: {rust_build_dir}")
                 shutil.rmtree(rust_build_dir)
         set_last_used_config(None)
-        sys.exit(0)
+        return
 
     build_configs = [specified_arguments.config] if specified_arguments.config else ["Release", "Debug"]
-    print(f"Build configs: {build_configs}")
-    if cpp_directory:
-        for build_type in build_configs:
+    for build_type in build_configs:
+        if cpp_directory:
             generate_cpp(cpp_directory, build_type)
             build_cpp(cpp_directory, build_type)
 
-    if rust_directory:
-        for build_type in build_configs:
+        if rust_directory:
             build_rust(rust_directory, build_type)
+
+        if success:
+            set_last_used_config(build_type)
 
 
 if __name__ == "__main__":
     main()
+    sys.exit(0 if success else 1)
