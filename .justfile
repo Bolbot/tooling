@@ -39,7 +39,7 @@ teardown:
 
 # Validation part
 
-[doc("Runs the specified testing script provided via project_paths.toml")]
+[doc("Runs the specified testing script provided via project_config.toml")]
 validate:
     python tooling/validate.py || python3 tooling/validate.py
 
@@ -56,4 +56,3 @@ vscode:
 [doc("Launches Zed from the project's root directory")]
 zed:
     zed . > /dev/null &
-

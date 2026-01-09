@@ -1,5 +1,4 @@
-include(components/gcc)
-include(components/ninja)
+include(../components/msvc)
 
 [settings]
 arch=x86_64

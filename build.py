@@ -5,41 +5,19 @@ from _text_colors import RED, YELLOW, GREEN, BLUE, RESET
 import sys
 import shutil
 import subprocess
-from _platform_specific import build_and_verify, get_lldb_hint, get_optional_environment
-from _resource_manager import get_conanfile, get_conan_profile, check_presence, get_verified_path
-from _resource_manager import load_config, get_last_used_config, set_last_used_config
+from _platform_specific import build_and_verify, get_optional_environment
+from _resource_manager import get_conanfile, check_presence, get_verified_path
+from _resource_manager import get_last_used_config, set_last_used_config
+from _resource_manager import get_cmake_preset_name, get_generate_command
 
 
 success = True
 
 
 def generate_cpp(cpp_directory, build_type):
-    build_dir = cpp_directory / "build" / build_type
-    print(f"C++ build directory:\t{build_dir}")
-
     check_presence("cmake")
-    check_presence("ninja")
-    if not check_presence("lldb", False):
-        print(f"{YELLOW}Could not find lldb{RESET}\nInstall it if you need to debug:\n{get_lldb_hint()}")
-    check_presence("clang")
-
-    conanfile = get_conanfile(cpp_directory)
-    if conanfile:
-        conan_profile = get_conan_profile()
-        if not conan_profile.exists():
-            print(f"Could not find {RED}{conan_profile}{RESET}\nCheck the tooling submodule integrity")
-            sys.exit(1)
-
-        check_presence("conan")
-        subprocess.run(["conan", "install", ".", "--build=missing",
-            "--profile", str(conan_profile),
-            "--settings", f"build_type={build_type}"],
-            env=get_optional_environment(),
-            cwd=cpp_directory, check=True)
-    else:
-        subprocess.run(["cmake", "-S", ".", "-B", str(build_dir), "-G", "Ninja",
-            f"-DCMAKE_BUILD_TYPE={build_type}", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"],
-            cwd=cpp_directory, check=True)
+    generate_command = get_generate_command(cpp_directory, build_type)
+    subprocess.run(generate_command, env=get_optional_environment(), cwd=cpp_directory, check=True)
 
 
 def build_cpp(cpp_directory, build_type):
@@ -50,16 +28,13 @@ def build_cpp(cpp_directory, build_type):
 
     conanfile = get_conanfile(cpp_directory)
     if conanfile:
-        cmake_preset = "conan-debug" if build_type == "Debug" else "conan-release"
-        subprocess.run(["cmake", "--preset", cmake_preset], env=get_optional_environment(), cwd=cpp_directory, check=True)
-        build_command += ["--preset", cmake_preset]
+        cmake_preset = get_cmake_preset_name(build_type)
+        subprocess.run(["cmake", "--preset", cmake_preset], cwd=cpp_directory, check=True)
+        build_command += ["--preset", "conan-debug" if build_type == "Debug" else "conan-release"]
     else:
-        build_command.append(build_dir)
+        build_command.append(str(build_dir))
 
-    if build_and_verify(build_command, cpp_directory):
-        print(f"{GREEN}Successful C++ build{RESET} with {" ".join(build_command)}\n")
-    else:
-        print(f"{RED}Failed to build C++{RESET} with {" ".join(build_command)}\n")
+    if not build_and_verify(build_command, cpp_directory):
         global success
         success = False
 
@@ -80,9 +55,8 @@ def build_rust(rust_directory, build_type):
 
 
 def main():
-    config = load_config()
-    cpp_directory = get_verified_path(config, "cpp")
-    rust_directory = get_verified_path(config, "rust")
+    cpp_directory = get_verified_path("cpp")
+    rust_directory = get_verified_path("rust")
 
     arguments = argparse.ArgumentParser()
     arguments.add_argument("--config", choices=["Debug", "Release"])

@@ -63,20 +63,7 @@ def get_activation_hint():
     else:
         return "source .venv/bin/activate"
 
-
-def ninja_profile_name():
-    if sys.platform == "win32":
-        return "windows_ninja_clang"
-    elif sys.platform == "linux":
-       return "linux_ninja_clang"
-    elif sys.platform == "darwin":              # TODO: macOS
-        print("MacOS is not supported yet!")
-        return None
-    else:
-        print("Unexpected platform. We support Windows (x64), MacOS (arm), and Linux (x64)")
-        sys.exit(1)
-
-
+# TODO: generalize and reuse
 def get_lldb_hint():
     if sys.platform == "win32":
         return "Download and install `MSYS2-x86_64`, launch and run:"\
@@ -119,19 +106,43 @@ def get_optional_environment():
     return optional_environment
 
 
-def build_and_verify(build_command, cpp_directory):
-    retries = 5 if sys.platform == "win32" else 1
+def get_profile_path(profiles_dir, profile_name):
+    if sys.platform == "win32":
+        profiles_dir /= "windows"
+    elif sys.platform == "linux":
+        profiles_dir /= "linux"
+    elif sys.platform == "darwin":
+        profiles_dir /= "macos"
+    else:
+        print("Unexpected platform. We support Windows (x64), MacOS (arm), and Linux (x64)")
+        sys.exit(1)
 
-    while retries > 0:
+    profile_path = profiles_dir / profile_name
+    return profile_path
+
+
+def windows_proof_cmake_preset(build_type, use_ninja):
+    if sys.platform == "win32" and not use_ninja:
+        return "conan-default"
+    else:
+        return "conan-debug" if build_type == "Debug" else "conan-release"
+
+
+def try_build(build_command, cpp_directory, attempts):
+    if attempts == 1 or sys.platform != "win32":
+        result = subprocess.run(build_command, cwd=cpp_directory)
+        return result.returncode == 0
+
+    while attempts > 0:
         result = subprocess.run(build_command, env=get_optional_environment(), cwd=cpp_directory, stdout=subprocess.PIPE, text=True)
         if result.returncode == 0:
             break
 
-        retries -= 1
-        if "ninja: error: failed recompaction: Permission denied" in result.stdout and retries > 0:
-            print(f"Ninja spuriously fails the Windows build. Retrying {retries} more time{ "s" if retries > 1 else "" }...")
+        attempts -= 1
+        if "ninja: error: failed recompaction: Permission denied" in result.stdout and attempts > 0:
+            print(f"Ninja spuriously fails the Windows build. Retrying {attempts} more time{ "s" if attempts > 1 else "" }...")
         else:
-            retries = 0
+            attempts = 0
 
-    print(f"{result.stdout}")
-    return retries > 0
+    print(f"{attempts.stdout}")
+    return attempts > 0

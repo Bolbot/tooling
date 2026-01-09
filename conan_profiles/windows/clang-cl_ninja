@@ -1,4 +1,4 @@
-include(windows_ninja_clang)
+include(clang_ninja)
 
 [settings]
 # MSVC LLVM is lagging behind, hence older version

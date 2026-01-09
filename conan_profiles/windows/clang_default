@@ -1,5 +1,4 @@
-include(components/msvc)
-include(components/ninja)
+include(../components/clang)
 
 [settings]
 arch=x86_64

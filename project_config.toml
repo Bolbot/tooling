@@ -3,8 +3,8 @@
 
 [cpp]
 path = "cpp"
-# select suitable profile from tooling/conan_profiles
-profile = "tooling/conan_profiles/windows_ninja_msvc"
+compiler = "clang"
+use_ninja = true
 
 [rust]
 path = "rust"

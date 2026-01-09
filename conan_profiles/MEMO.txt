@@ -1,0 +1,5 @@
+The profile is selected based on OS and settings in project_config.toml in the root directory of the project.
+
+Feel free to update the compiler versions according to your project requirements.
+
+Note that submodule updates might overwrite it.

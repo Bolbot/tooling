@@ -1,5 +1,4 @@
-include(components/clang)
-include(components/ninja)
+include(../components/gcc)
 
 [settings]
 arch=x86_64

@@ -3,16 +3,23 @@ from typing import Final
 import shutil
 import sys
 import tomllib
-from _platform_specific import python_in_venv, ninja_profile_name
+from _platform_specific import python_in_venv, get_profile_path, windows_proof_cmake_preset, try_build
 from _text_colors import RED, YELLOW, GREEN, BLUE, RESET
+
 
 main_project: Final = Path(__file__).parent.absolute().parent
 venv_path   : Final = main_project / ".venv"
 venv_python : Final = venv_path / python_in_venv()
 requirements: Final = main_project / "requirements.txt"
-config_file:  Final = main_project / "project_paths.toml"
+config_file:  Final = main_project / "project_config.toml"
 profiles_dir: Final = main_project / "tooling" / "conan_profiles"
 last_used:    Final = main_project / ".tools" / "last_built_config.txt"
+
+
+config_contents = None
+compiler = ""
+use_ninja = False
+
 
 def get_main_project_path():
     return main_project
@@ -27,17 +34,17 @@ def get_requirements_path():
 
 
 def get_conan_profile():
-    fallback_profile = profiles_dir / ninja_profile_name()
-    config = load_config().get("cpp")
-    profile_path = Path(config.get("profile", "No profile entry in cpp section"))
+    update_cpp_config()
+    profile_name = compiler + ("_ninja" if use_ninja else "_default")
+    profile_path = get_profile_path(profiles_dir, profile_name)
+
     if profile_path.resolve().exists():
-        print(f"Using {profile_path} conan profile")
-        return profile_path.resolve()
+        print(f"Conan profile:\t\t{profile_path}")
+        return str(profile_path.resolve())
     else:
-        print(f"{YELLOW}Conan profile does not exist: {RESET}{profile_path}")
-        print(f"Make sure {config_file} contains profile in cpp section")
-        print(f"{YELLOW}Trying to apply the fallback: {RESET}{fallback_profile}")
-        return fallback_profile
+        print(f"{RED}Conan profile does not exist: {RESET}{profile_path}")
+        print(f"Make sure {config_file} contains valid compiler value in cpp section")
+        sys.exit(1)
 
 
 def resolve_resource(file_name, additional_text=""):
@@ -59,25 +66,41 @@ def check_presence(tool, required=True):
     return shutil.which(tool) is not None
 
 
-def get_verified_path(global_config, section):
-    config = global_config.get(section)
+def get_verified_path(section):
+    config = load_config(section)
     if not config:
-        print(f"{YELLOW}Skipping {section}{RESET}, because it was missing in {config_file}")
         return None
-    path = Path(config.get("path", section)).resolve()
+
+    path = Path(config.get("path", ".")).resolve()
     if not path.exists():
-        print(f"{RED}{section} path does not exist: {RESET}{path}")
-        print(f"Make sure your {config_file} specifies existing directory for {section}")
+        print(f"{RED}Not found: {RESET}{path}")
+        print(f"Make sure your {YELLOW}{config_file.name}{RESET} specifies proper relative paths")
         sys.exit(1)
+
+    if section == "cpp" and not (path / "CMakeLists.txt").exists():
+        print(f"{RED}No CMakeLists.txt{RESET} in {path}\nCheck the path in {section} section of your {config_file.name}")
+        sys.exit(1)
+    if section == "rust" and not (path / "Cargo.toml").exists():
+        print(f"{RED}No Cargo.toml{RESET} in {path}\nCheck the path in {section} section of your {config_file.name}")
+        sys.exit(1)
+
     return path
 
 
-def load_config():
-    if not config_file.exists():
-        print(f"{RED}Could not find {str(config_file)}{RESET}\nRerun {GREEN}just setup{RESET}")
-        sys.exit(1)
-    print(f"Reading paths from {BLUE}{str(config_file)}{RESET}")
-    return tomllib.loads(config_file.read_text())
+def load_config(section):
+    global config_contents
+    if not config_contents:
+        if not config_file.exists():
+            print(f"{RED}Could not find {str(config_file)}{RESET}\nRerun {GREEN}just setup{RESET}")
+            sys.exit(1)
+        print(f"Reading paths from {BLUE}{str(config_file)}{RESET}")
+        config_contents = tomllib.loads(config_file.read_text())
+
+    section_config = config_contents.get(section)
+    if not section_config:
+        print(f"{YELLOW}Skipping {section}{RESET}, because it was missing in {config_file.name}")
+        return None
+    return section_config
 
 
 def get_last_used_config():
@@ -105,3 +128,51 @@ def get_conanfile(cpp_directory):
         return result
     result = cpp_directory / "conanfile.py"
     return result if result.exists() else None
+
+
+def get_generate_command(cpp_directory, build_type):
+    build_dir = cpp_directory / "build" / build_type
+    print(f"C++ build directory:\t{build_dir}")
+
+    result = []
+
+    conanfile = get_conanfile(cpp_directory)
+    if conanfile:
+        check_presence("conan")
+        conan_profile = get_conan_profile()
+        result += ["conan", "install", ".", "--build=missing", "--profile", conan_profile, "--settings", f"build_type={build_type}"]
+    else:
+        result += ["cmake", "-S", ".", "-B", str(build_dir), f"-DCMAKE_BUILD_TYPE={build_type}", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"]
+        if use_ninja:
+            result += ["-G", "Ninja"]
+
+    check_presence(compiler, compiler != "msvc")
+    if use_ninja:
+        check_presence("ninja")
+
+    return result
+
+
+def update_cpp_config():
+    config = load_config("cpp")
+    global compiler, use_ninja
+    compiler = config.get("compiler", "")
+    if not compiler:
+        print(f"{YELLOW}compiler value was missing from {config_file.name}{RESET}")
+        print("Trying to use clang as a fallback")
+        compiler = "clang"
+    use_ninja = config.get("use_ninja", False)
+
+
+def get_cmake_preset_name(build_type):
+    return windows_proof_cmake_preset(build_type, use_ninja)
+
+
+def build_and_verify(build_command, cpp_directory):
+    max_attempts = 7 if use_ninja else 1
+    if try_build(build_command, cpp_directory, max_attempts):
+        print(f"{GREEN}Successful C++ build{RESET} with {" ".join(build_command)}\n")
+        return True
+    else:
+        print(f"{RED}Failed to build C++{RESET} with {" ".join(build_command)}\n")
+        return False
