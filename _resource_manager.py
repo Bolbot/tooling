@@ -3,7 +3,7 @@ from typing import Final
 import shutil
 import sys
 import tomllib
-from _platform_specific import python_in_venv, get_profile_path, windows_proof_cmake_preset, try_build
+from _platform_specific import prime_environment, python_in_venv, get_profile_path, windows_proof_cmake_preset, try_build
 from _text_colors import RED, YELLOW, GREEN, BLUE, RESET
 
 
@@ -34,7 +34,6 @@ def get_requirements_path():
 
 
 def get_conan_profile():
-    update_cpp_config()
     profile_name = compiler + ("_ninja" if use_ninja else "_default")
     profile_path = get_profile_path(profiles_dir, profile_name)
 
@@ -146,7 +145,7 @@ def get_generate_command(cpp_directory, build_type):
         if use_ninja:
             result += ["-G", "Ninja"]
 
-    check_presence(compiler, compiler != "msvc")
+    check_presence(compiler if compiler != "msvc" else "cl")
     if use_ninja:
         check_presence("ninja")
 

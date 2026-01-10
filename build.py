@@ -5,9 +5,9 @@ from _text_colors import RED, YELLOW, GREEN, BLUE, RESET
 import sys
 import shutil
 import subprocess
-from _platform_specific import build_and_verify, get_optional_environment
-from _resource_manager import get_conanfile, check_presence, get_verified_path
-from _resource_manager import get_last_used_config, set_last_used_config
+from _platform_specific import prime_environment
+from _resource_manager import get_conanfile, check_presence, get_verified_path, update_cpp_config
+from _resource_manager import build_and_verify, get_last_used_config, set_last_used_config
 from _resource_manager import get_cmake_preset_name, get_generate_command
 
 
@@ -17,12 +17,12 @@ success = True
 def generate_cpp(cpp_directory, build_type):
     check_presence("cmake")
     generate_command = get_generate_command(cpp_directory, build_type)
-    subprocess.run(generate_command, env=get_optional_environment(), cwd=cpp_directory, check=True)
+    subprocess.run(generate_command, cwd=cpp_directory, check=True)
 
 
 def build_cpp(cpp_directory, build_type):
     build_dir = cpp_directory / "build" / build_type
-    print(f"C++ build directory:\t{build_dir}")
+    print(f"Building {build_type} C++ in {build_dir}")
 
     build_command = ["cmake", "--build"]
 
@@ -57,6 +57,8 @@ def build_rust(rust_directory, build_type):
 def main():
     cpp_directory = get_verified_path("cpp")
     rust_directory = get_verified_path("rust")
+    prime_environment()
+    update_cpp_config()
 
     arguments = argparse.ArgumentParser()
     arguments.add_argument("--config", choices=["Debug", "Release"])

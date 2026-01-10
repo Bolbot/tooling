@@ -78,13 +78,9 @@ def get_lldb_hint():
         sys.exit(1)
 
 
-def get_optional_environment():
+def prime_environment():
     if sys.platform != "win32":
         return None
-
-    global optional_environment
-    if optional_environment is not None:
-        return optional_environment
 
     vswhere = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
     if not vswhere.exists():
@@ -95,15 +91,11 @@ def get_optional_environment():
     if not activator_path.exists():
         return None
 
-    environment = os.environ.copy()
     msv_updates = subprocess.run(["cmd.exe", "/c", str(activator_path), "&&", "set"], capture_output=True, text=True)
     for line in msv_updates.stdout.split('\n'):
         if '=' in line:
             key, value = line.split('=', 1)
-            environment[key] = value.strip()
-
-    optional_environment = environment
-    return optional_environment
+            os.environ[key] = value.strip()
 
 
 def get_profile_path(profiles_dir, profile_name):
@@ -133,16 +125,15 @@ def try_build(build_command, cpp_directory, attempts):
         result = subprocess.run(build_command, cwd=cpp_directory)
         return result.returncode == 0
 
-    while attempts > 0:
-        result = subprocess.run(build_command, env=get_optional_environment(), cwd=cpp_directory, stdout=subprocess.PIPE, text=True)
-        if result.returncode == 0:
-            break
-
+    while True:
+        result = subprocess.run(build_command, cwd=cpp_directory, stdout=subprocess.PIPE, text=True)
         attempts -= 1
+
         if "ninja: error: failed recompaction: Permission denied" in result.stdout and attempts > 0:
             print(f"Ninja spuriously fails the Windows build. Retrying {attempts} more time{ "s" if attempts > 1 else "" }...")
         else:
             attempts = 0
 
-    print(f"{attempts.stdout}")
-    return attempts > 0
+        if attempts == 0:
+            print(f"{result.stdout}")
+            return result.returncode == 0
