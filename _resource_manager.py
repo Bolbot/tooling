@@ -3,7 +3,7 @@ from typing import Final
 import shutil
 import sys
 import tomllib
-from _platform_specific import prime_environment, python_in_venv, get_profile_path, windows_proof_cmake_preset, try_build
+from _platform_specific import prime_environment, python_in_venv, get_profile_path, windows_proof_cmake_preset, try_build, print_compiler_warning
 from _text_colors import RED, YELLOW, GREEN, BLUE, RESET
 
 
@@ -31,6 +31,10 @@ def get_venv_python_path():
 
 def get_requirements_path():
     return requirements
+
+
+def needs_primed_environment():
+    return compiler == "msvc" or compiler == "clang-cl"
 
 
 def get_conan_profile():
@@ -135,6 +139,18 @@ def get_generate_command(cpp_directory, build_type):
 
     result = []
 
+    c_compiler = compiler if compiler != "msvc" else "cl"
+    cpp_compiler = compiler
+    match compiler:
+        case "gcc": cpp_compiler = "g++"
+        case "clang": cpp_compiler = "clang++"
+        case _: cpp_compiler = c_compiler
+
+    check_presence(c_compiler)
+    check_presence(cpp_compiler)
+    if use_ninja:
+        check_presence("ninja")
+
     conanfile = get_conanfile(cpp_directory)
     if conanfile:
         check_presence("conan")
@@ -144,10 +160,11 @@ def get_generate_command(cpp_directory, build_type):
         result += ["cmake", "-S", ".", "-B", str(build_dir), f"-DCMAKE_BUILD_TYPE={build_type}", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"]
         if use_ninja:
             result += ["-G", "Ninja"]
-
-    check_presence(compiler if compiler != "msvc" else "cl")
-    if use_ninja:
-        check_presence("ninja")
+        else:
+            if compiler == "clang-cl":
+                result += ["-T", "ClangCL"]
+        result += [f"-DCMAKE_C_COMPILER={c_compiler}", f"-DCMAKE_CXX_COMPILER={cpp_compiler}"]
+        print_compiler_warning(compiler, not use_ninja)
 
     return result
 

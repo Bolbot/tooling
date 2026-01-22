@@ -8,7 +8,7 @@ import subprocess
 from _platform_specific import prime_environment
 from _resource_manager import get_conanfile, check_presence, get_verified_path, update_cpp_config
 from _resource_manager import build_and_verify, get_last_used_config, set_last_used_config
-from _resource_manager import get_cmake_preset_name, get_generate_command
+from _resource_manager import get_cmake_preset_name, get_generate_command, needs_primed_environment
 
 
 success = True
@@ -17,6 +17,7 @@ success = True
 def generate_cpp(cpp_directory, build_type):
     check_presence("cmake")
     generate_command = get_generate_command(cpp_directory, build_type)
+    print(f"Generating C++ project: {' '.join(generate_command)}")
     subprocess.run(generate_command, cwd=cpp_directory, check=True)
 
 
@@ -57,8 +58,8 @@ def build_rust(rust_directory, build_type):
 def main():
     cpp_directory = get_verified_path("cpp")
     rust_directory = get_verified_path("rust")
-    prime_environment()
     update_cpp_config()
+    prime_environment(needs_primed_environment())
 
     arguments = argparse.ArgumentParser()
     arguments.add_argument("--config", choices=["Debug", "Release"])

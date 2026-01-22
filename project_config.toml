@@ -3,6 +3,7 @@
 
 [cpp]
 path = "cpp"
+# compiler can be set to: gcc, clang, msvc, clang-cl
 compiler = "clang"
 use_ninja = true
 

@@ -4,6 +4,8 @@ import urllib.request
 import os
 import subprocess
 
+from _text_colors import GREEN, YELLOW, RESET
+
 
 optional_environment = None
 
@@ -78,8 +80,8 @@ def get_lldb_hint():
         sys.exit(1)
 
 
-def prime_environment():
-    if sys.platform != "win32":
+def prime_environment(needed):
+    if sys.platform != "win32" or not needed:
         return None
 
     vswhere = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
@@ -137,3 +139,11 @@ def try_build(build_command, cpp_directory, attempts):
         if attempts == 0:
             print(f"{result.stdout}")
             return result.returncode == 0
+
+
+def print_compiler_warning(compiler, windows_generator):
+    if sys.platform != "win32" or not windows_generator:
+        return
+    if compiler != "clang-cl" and compiler != "msvc":
+        print(f"{YELLOW}MSVC Generator ignores {compiler}{RESET}\nCompatible compilers: msvc or clang-cl")
+        print(f"If you need {compiler}, try to use {GREEN}ninja{RESET} instead\n")
