@@ -3,8 +3,9 @@ from pathlib import Path
 import urllib.request
 import os
 import subprocess
+import shutil
 
-from _text_colors import GREEN, YELLOW, RESET
+from _text_colors import GREEN, YELLOW, RED, RESET
 
 
 optional_environment = None
@@ -57,6 +58,17 @@ def prime_uv():
     return uv_path
 
 
+def prime_python(venv_python_path):
+    if sys.platform == "win32":
+        python3_in_venv = venv_python_path.parent / "python3.exe"
+        if not python3_in_venv.exists():
+            shutil.copyfile(venv_python_path, python3_in_venv)
+    elif sys.platform == "linux":
+        if not shutil.which("python"):
+            print("python → python3 not configured, consider installing it this way:")
+            print("\tsudo apt update\n\tsudo apt install python-is-python3")
+
+
 def get_activation_hint():
     if sys.platform == "win32":
         return "cmd:\t\t.venv\\Scripts\\activate\n"\
@@ -80,8 +92,16 @@ def get_lldb_hint():
         sys.exit(1)
 
 
-def prime_environment(needed):
-    if sys.platform != "win32" or not needed:
+def prime_environment(compiler):
+    windows_specific_compiler = compiler == "msvc" or compiler == "clang-cl"
+    if sys.platform != "win32":
+        if windows_specific_compiler:
+            print(f"{RED}{compiler}{RESET} is Windows only. Consider using {GREEN}clang{RESET} instead")
+            sys.exit(1)
+        else:
+            return None
+
+    if not windows_specific_compiler:
         return None
 
     vswhere = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"

@@ -8,7 +8,7 @@ import subprocess
 from _platform_specific import prime_environment
 from _resource_manager import get_conanfile, check_presence, get_verified_path, update_cpp_config
 from _resource_manager import build_and_verify, get_last_used_config, set_last_used_config
-from _resource_manager import get_cmake_preset_name, get_generate_command, needs_primed_environment
+from _resource_manager import get_cmake_preset_name, get_generate_command, get_compiler
 
 
 success = True
@@ -33,7 +33,7 @@ def build_cpp(cpp_directory, build_type):
         subprocess.run(["cmake", "--preset", cmake_preset], cwd=cpp_directory, check=True)
         build_command += ["--preset", "conan-debug" if build_type == "Debug" else "conan-release"]
     else:
-        build_command.append(str(build_dir))
+        build_command += [str(build_dir), "--config", build_type]
 
     if not build_and_verify(build_command, cpp_directory):
         global success
@@ -59,7 +59,7 @@ def main():
     cpp_directory = get_verified_path("cpp")
     rust_directory = get_verified_path("rust")
     update_cpp_config()
-    prime_environment(needs_primed_environment())
+    prime_environment(get_compiler())
 
     arguments = argparse.ArgumentParser()
     arguments.add_argument("--config", choices=["Debug", "Release"])

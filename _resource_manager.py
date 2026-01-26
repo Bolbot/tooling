@@ -3,7 +3,7 @@ from typing import Final
 import shutil
 import sys
 import tomllib
-from _platform_specific import prime_environment, python_in_venv, get_profile_path, windows_proof_cmake_preset, try_build, print_compiler_warning
+from _platform_specific import python_in_venv, get_profile_path, windows_proof_cmake_preset, try_build, print_compiler_warning
 from _text_colors import RED, YELLOW, GREEN, BLUE, RESET
 
 
@@ -33,8 +33,8 @@ def get_requirements_path():
     return requirements
 
 
-def needs_primed_environment():
-    return compiler == "msvc" or compiler == "clang-cl"
+def get_compiler():
+    return compiler
 
 
 def get_conan_profile():
@@ -96,7 +96,7 @@ def load_config(section):
         if not config_file.exists():
             print(f"{RED}Could not find {str(config_file)}{RESET}\nRerun {GREEN}just setup{RESET}")
             sys.exit(1)
-        print(f"Reading paths from {BLUE}{str(config_file)}{RESET}")
+        print(f"Reading configuration from {BLUE}{str(config_file.parent.name)}/{str(config_file.name)}{RESET}")
         config_contents = tomllib.loads(config_file.read_text())
 
     section_config = config_contents.get(section)

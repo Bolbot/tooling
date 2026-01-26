@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 import subprocess
 import shutil
-from _platform_specific import prime_uv, get_activation_hint
+from _platform_specific import prime_uv, prime_python, get_activation_hint
 from _resource_manager import resolve_resource, get_venv_python_path, get_requirements_path, get_main_project_path
 from _text_colors import RED, YELLOW, GREEN, RESET
 
@@ -40,6 +40,7 @@ def main():
         if not get_venv_python_path().exists():
             subprocess.run([local_uv, "venv", "--python", "3.13"], check=True, cwd=get_main_project_path())
             subprocess.run([local_uv, "pip", "install", "--upgrade", "pip"], check=True, cwd=get_main_project_path())
+    prime_python(get_venv_python_path())
 
     print(f"Adding the requirements from {str(get_requirements_path())}")
     subprocess.run([local_uv, "pip", "install", "-r", str(get_requirements_path())], check=True, cwd=get_main_project_path())
