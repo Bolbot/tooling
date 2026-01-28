@@ -6,16 +6,15 @@ import urllib.request
 import os
 import subprocess
 import shutil
-from typing import Final
 
-RED    : Final = "\033[31m"
-YELLOW : Final = "\033[33m"
-GREEN  : Final = "\033[32m"
-BLUE   : Final = "\033[34m"
-RESET  : Final = "\033[0m"
+RED    = "\033[31m"
+YELLOW = "\033[33m"
+GREEN  = "\033[32m"
+BLUE   = "\033[34m"
+RESET  = "\033[0m"
 
-main_project: Final = Path(__file__).parent.absolute().parent
-temp_venv: Final = ".venv-temporary"
+main_project = Path(__file__).parent.absolute().parent
+temp_venv = ".venv-temporary"
 
 
 def prime_uv():
@@ -62,21 +61,21 @@ def prime_uv():
 
 def main():
     if sys.version_info >= (3, 11):
-        print(f"Your python version is {BLUE}{sys.version_info.major}.{sys.version_info.minor}{RESET}")
-        print(f"No need for prebootstrap.py, you can run {GREEN}bootstrap.py{RESET} directly")
+        print("Your python version is " + BLUE + str(sys.version_info.major) + '.' + str(sys.version_info.minor) + RESET)
+        print("No need for prebootstrap.py, you can run " + GREEN + "bootstrap.py" + RESET + " directly")
         sys.exit(0)
 
     local_uv = prime_uv()
-    subprocess.run([local_uv, "venv", temp_venv, "--python", "3.13"], check=True, cwd=main_project)
+    subprocess.run([local_uv, "venv", temp_venv, "--python", "3.13"], check=True, cwd=str(main_project))
 
     justfile = main_project / ".justfile"
     bootstrap = main_project / "tooling" / "bootstrap.py"
     if shutil.which("just") and justfile.exists():
-        print(f"Run {GREEN}just setup{RESET}\n{YELLOW}Afterward, you can delete {RED}{temp_venv}{RESET}")
+        print("Run " + GREEN + "just setup " + RESET + '\n' + YELLOW + "Afterward, you can delete " + RED + temp_venv + RESET)
     else:
         if not bootstrap.exists():
-            print(f"{YELLOW}Check your tooling submodule integrity:{RESET} make sure bootstrap.py is there")
-        print(f"Run {GREEN}python tooling/bootstrap.py{RESET}\n{YELLOW}Afterward, you can delete {RED}{temp_venv}{RESET}")
+            print(YELLOW + "Check your tooling submodule integrity:" + RESET + " make sure bootstrap.py is there")
+        print("Run " + GREEN + "python tooling/bootstrap.py" + RESET + '\n' + YELLOW + "Afterward, you can delete " + RED + temp_venv + RESET)
 
 
 if __name__ == "__main__":
