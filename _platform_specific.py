@@ -152,7 +152,7 @@ def try_build(build_command, cpp_directory, attempts):
         attempts -= 1
 
         if "ninja: error: failed recompaction: Permission denied" in result.stdout and attempts > 0:
-            print(f"Ninja spuriously fails the Windows build. Retrying {attempts} more time{ "s" if attempts > 1 else "" }...")
+            print(f"Ninja spuriously fails the Windows build. Retrying {attempts} more time{ 's' if attempts > 1 else '' }...")
         else:
             attempts = 0
 

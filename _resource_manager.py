@@ -187,8 +187,8 @@ def get_cmake_preset_name(build_type):
 def build_and_verify(build_command, cpp_directory):
     max_attempts = 7 if use_ninja else 1
     if try_build(build_command, cpp_directory, max_attempts):
-        print(f"{GREEN}Successful C++ build{RESET} with {" ".join(build_command)}\n")
+        print(f"{GREEN}Successful C++ build{RESET} with {' '.join(build_command)}\n")
         return True
     else:
-        print(f"{RED}Failed to build C++{RESET} with {" ".join(build_command)}\n")
+        print(f"{RED}Failed to build C++{RESET} with {' '.join(build_command)}\n")
         return False

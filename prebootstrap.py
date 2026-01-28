@@ -63,7 +63,7 @@ def prime_uv():
 def main():
     if sys.version_info >= (3, 11):
         print(f"Your python version is {BLUE}{sys.version_info.major}.{sys.version_info.minor}{RESET}")
-        print(f"No need for prebootstrap.py, you can run {GREEN}bootstrap.py{RESET} directrly")
+        print(f"No need for prebootstrap.py, you can run {GREEN}bootstrap.py{RESET} directly")
         sys.exit(0)
 
     local_uv = prime_uv()
