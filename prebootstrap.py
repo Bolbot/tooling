@@ -7,13 +7,9 @@ import os
 import subprocess
 import shutil
 
-RED    = "\033[31m"
-YELLOW = "\033[33m"
-GREEN  = "\033[32m"
-BLUE   = "\033[34m"
-RESET  = "\033[0m"
+from _paths import main_project
+from _text_colors import red_text, green_text, blue_text, yellow_text
 
-main_project = Path(__file__).parent.absolute().parent
 temp_venv = ".venv-temporary"
 
 
@@ -59,23 +55,31 @@ def prime_uv():
     return uv_path
 
 
+def print_run_suggestion():
+    justfile = main_project / ".justfile"
+    bootstrap = main_project / "tooling" / "bootstrap.py"
+    run_suggestion = "python tooling/bootstrap.py"
+
+    if shutil.which("just") and justfile.exists():
+        run_suggestion = "just setup"
+    elif not bootstrap.exists():
+        print(yellow_text("Check your tooling submodule integrity:") + " make sure bootstrap.py is there")
+
+    print("Run " + green_text(run_suggestion))
+
+
 def main():
     if sys.version_info >= (3, 11):
-        print("Your python version is " + BLUE + str(sys.version_info.major) + '.' + str(sys.version_info.minor) + RESET)
-        print("No need for prebootstrap.py, you can run " + GREEN + "bootstrap.py" + RESET + " directly")
+        print("Your python " + blue_text(str(sys.version_info.major) + '.' + str(sys.version_info.minor))
+            + " is modern enough, prebootstrap.py is not required")
+        print_run_suggestion()
         sys.exit(0)
 
     local_uv = prime_uv()
     subprocess.run([local_uv, "venv", temp_venv, "--python", "3.13"], check=True, cwd=str(main_project))
 
-    justfile = main_project / ".justfile"
-    bootstrap = main_project / "tooling" / "bootstrap.py"
-    if shutil.which("just") and justfile.exists():
-        print("Run " + GREEN + "just setup " + RESET + '\n' + YELLOW + "Afterward, you can delete " + RED + temp_venv + RESET)
-    else:
-        if not bootstrap.exists():
-            print(YELLOW + "Check your tooling submodule integrity:" + RESET + " make sure bootstrap.py is there")
-        print("Run " + GREEN + "python tooling/bootstrap.py" + RESET + '\n' + YELLOW + "Afterward, you can delete " + RED + temp_venv + RESET)
+    print_run_suggestion()
+    print(yellow_text("Afterward, you can delete ") + red_text(temp_venv))
 
 
 if __name__ == "__main__":

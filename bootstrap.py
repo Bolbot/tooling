@@ -5,27 +5,28 @@ import sys
 import subprocess
 import shutil
 from _platform_specific import prime_uv, prime_python, get_activation_hint
-from _resource_manager import resolve_resource, get_venv_python_path, get_requirements_path, get_main_project_path
-from _text_colors import RED, YELLOW, GREEN, RESET
+from _resource_manager import resolve_resource
+from _text_colors import red_text, yellow_text, green_text
+from _paths import main_project, venv_python, requirements
 
 
 def running_in_native_venv() -> bool:
     if sys.prefix == sys.base_prefix:
-        print(f"{YELLOW}Not running in virtual environment{RESET}")
+        print(yellow_text("Not running in virtual environment")
         return False
-    if Path(sys.executable).absolute() != get_venv_python_path():
-        print(f"{RED}Running in unrelated virtual environment{RESET}\n\texpected:  {get_venv_python_path()}\n\tactual:    {str(sys.executable)}")
+    if Path(sys.executable).absolute() != venv_python:
+        print(red_text("Running in unrelated virtual environment") + f"\n\texpected:  {venv_python}\n\tactual:    {str(sys.executable)}")
         return False
     return True
 
 
 def check_optional_utils():
     if not shutil.which("code"):
-        print(f"{YELLOW}Visual Studio Code can not be found.{RESET} Install it to use `just vscode` command (optional)")
+        print(yellow_text("Visual Studio Code can not be found.") +" Install it to use `just vscode` command (optional)")
     if not shutil.which("zed"):
         print("Zed can not be found. Install it to use `just zed` command (optional)")
     if not shutil.which("just"):
-        print(f"{YELLOW}just is missing.{RESET} Install just 1.27 or later to use just commands (recommended)")
+        print(yellow_text("just is missing.") + " Install just 1.27 or later to use just commands (recommended)")
 
 
 def main():
@@ -37,16 +38,16 @@ def main():
     local_uv = prime_uv()
     requires_activation = not running_in_native_venv()
     if requires_activation:
-        if not get_venv_python_path().exists():
-            subprocess.run([local_uv, "venv", "--python", "3.13"], check=True, cwd=get_main_project_path())
-            subprocess.run([local_uv, "pip", "install", "--upgrade", "pip"], check=True, cwd=get_main_project_path())
-    prime_python(get_venv_python_path())
+        if not venv_python.exists():
+            subprocess.run([local_uv, "venv", "--python", "3.13"], check=True, cwd=str(main_project))
+            subprocess.run([local_uv, "pip", "install", "--upgrade", "pip"], check=True, cwd=str(main_project))
+    prime_python(venv_python)
 
-    print(f"Adding the requirements from {str(get_requirements_path())}")
-    subprocess.run([local_uv, "pip", "install", "-r", str(get_requirements_path())], check=True, cwd=get_main_project_path())
+    print(f"Adding the requirements from {str(requirements)}")
+    subprocess.run([local_uv, "pip", "install", "-r", str(requirements)], check=True, cwd=str(main_project))
 
     if requires_activation:
-        print(f"\n\nDon't forget to activate your virtual environment:{GREEN}\n{get_activation_hint()}{RESET}")
+        print(f"\n\nDon't forget to activate your virtual environment:\n" + green_text(get_activation_hint()))
 
 
 if __name__ == "__main__":

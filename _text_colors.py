@@ -1,7 +1,22 @@
-from typing import Final
 
-RED    : Final = "\033[31m"
-YELLOW : Final = "\033[33m"
-GREEN  : Final = "\033[32m"
-BLUE   : Final = "\033[34m"
-RESET  : Final = "\033[0m"
+RED    = "\033[31m"
+YELLOW = "\033[33m"
+GREEN  = "\033[32m"
+BLUE   = "\033[34m"
+RESET  = "\033[0m"
+
+
+def red_text(text: str) -> str:
+    return RED + text + RESET
+
+
+def yellow_text(text: str) -> str:
+    return YELLOW + text + RESET
+
+
+def green_text(text: str) -> str:
+    return GREEN + text + RESET
+
+
+def blue_text(text: str) -> str:
+    return BLUE + text + RESET

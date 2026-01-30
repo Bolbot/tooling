@@ -1,36 +1,15 @@
 from pathlib import Path
-from typing import Final
 import shutil
 import sys
 import tomllib
-from _platform_specific import python_in_venv, get_profile_path, windows_proof_cmake_preset, try_build, print_compiler_warning
-from _text_colors import RED, YELLOW, GREEN, BLUE, RESET
-
-
-main_project: Final = Path(__file__).parent.absolute().parent
-venv_path   : Final = main_project / ".venv"
-venv_python : Final = venv_path / python_in_venv()
-requirements: Final = main_project / "requirements.txt"
-config_file:  Final = main_project / "project_config.toml"
-profiles_dir: Final = main_project / "tooling" / "conan_profiles"
-last_used:    Final = main_project / ".tools" / "last_built_config.txt"
+from _platform_specific import get_profile_path, windows_proof_cmake_preset, try_build, print_compiler_warning
+from _text_colors import blue_text, green_text, red_text, yellow_text
+from _paths import script_dir, profiles_dir, main_project, config_file, last_used
 
 
 config_contents = None
 compiler = ""
 use_ninja = False
-
-
-def get_main_project_path():
-    return main_project
-
-
-def get_venv_python_path():
-    return venv_python
-
-
-def get_requirements_path():
-    return requirements
 
 
 def get_compiler():
@@ -45,26 +24,26 @@ def get_conan_profile():
         print(f"Conan profile:\t\t{profile_path}")
         return str(profile_path.resolve())
     else:
-        print(f"{RED}Conan profile does not exist: {RESET}{profile_path}")
-        print(f"Make sure {config_file} contains valid compiler value in cpp section")
+        print(red_text("Conan profile does not exist: ") + str(profile_path))
+        print("Make sure {} contains valid compiler value in cpp section".format(str(config_file)))
         sys.exit(1)
 
 
 def resolve_resource(file_name, additional_text=""):
     expected = main_project / file_name
-    fallback = Path(__file__).resolve().parent / file_name
+    fallback = script_dir / file_name
 
     if not expected.exists():
-        print(f"{YELLOW}Haven't found {file_name}{RESET} in {main_project}")
-        print(f"Adding a fallback {file_name}: {additional_text}")
-        print(f"Don't forget to add it to your VCS: {GREEN}git add {file_name}{RESET}")
+        print(yellow_text("Haven't found {}".format(file_name)) + " in " + str(main_project))
+        print("Adding a fallback {}: {}".format(file_name, additional_text))
+        print("Don't forget to add it to your VCS: " + green_text("git add {}".format(str(file_name))))
         shutil.copyfile(str(fallback), str(expected))
 
 
 def check_presence(tool, required=True):
     if shutil.which(tool) is None and required:
-        print(f"{RED}Failed to find {tool}. Can not proceed{RESET}")
-        print(f"Make sure to run {GREEN}just setup{RESET} and properly activate your shell")
+        print(red_text("Failed to find {}. Can not proceed".format(tool)))
+        print("Make sure to run " + green_text("just setup") + " and properly activate your shell")
         sys.exit(1)
     return shutil.which(tool) is not None
 
@@ -76,15 +55,17 @@ def get_verified_path(section):
 
     path = Path(config.get("path", ".")).resolve()
     if not path.exists():
-        print(f"{RED}Not found: {RESET}{path}")
-        print(f"Make sure your {YELLOW}{config_file.name}{RESET} specifies proper relative paths")
+        print(red_text("Not found: ") + str(path))
+        print("Make sure your " + yellow_text(config_file.name) + " specifies proper relative paths")
         sys.exit(1)
 
     if section == "cpp" and not (path / "CMakeLists.txt").exists():
-        print(f"{RED}No CMakeLists.txt{RESET} in {path}\nCheck the path in {section} section of your {config_file.name}")
+        print(red_text("No CMakeLists.txt") + " in " + str(path))
+        print("Check the path in {} section of your {}".format(section, config_file.name))
         sys.exit(1)
     if section == "rust" and not (path / "Cargo.toml").exists():
-        print(f"{RED}No Cargo.toml{RESET} in {path}\nCheck the path in {section} section of your {config_file.name}")
+        print(red_text("No Cargo.toml") + " in " + str(path))
+        print("Check the path in {} section of your {}".format(section, config_file.name))
         sys.exit(1)
 
     return path
@@ -94,14 +75,14 @@ def load_config(section):
     global config_contents
     if not config_contents:
         if not config_file.exists():
-            print(f"{RED}Could not find {str(config_file)}{RESET}\nRerun {GREEN}just setup{RESET}")
+            print(red_text("Could not find {}".format(str(config_file))) + "\nRerun " + green_text("just setup"))
             sys.exit(1)
-        print(f"Reading configuration from {BLUE}{str(config_file.parent.name)}/{str(config_file.name)}{RESET}")
+        print("Reading configuration from " + blue_text(str(config_file.parent.name) + '/' + str(config_file.name)))
         config_contents = tomllib.loads(config_file.read_text())
 
     section_config = config_contents.get(section)
     if not section_config:
-        print(f"{YELLOW}Skipping {section}{RESET}, because it was missing in {config_file.name}")
+        print(yellow_text("Skipping {}".format(section)) + " because it was missing in " + config_file.name)
         return None
     return section_config
 
@@ -111,7 +92,7 @@ def get_last_used_config():
         return None
     config = last_used.read_text()
     if config != "Debug" and config != "Release":
-        print(f"{RED}Broken {str(config)}{RESET}\nRemoving it and building from scratch")
+        print(red_text("Broken {}".format(str(config))) + "\nRemoving it and building from scratch")
         last_used.unlink()
         return None
     return config
@@ -174,7 +155,7 @@ def update_cpp_config():
     global compiler, use_ninja
     compiler = config.get("compiler", "")
     if not compiler:
-        print(f"{YELLOW}compiler value was missing from {config_file.name}{RESET}")
+        print(yellow_text("compiler value was missing from {}".format(config_file.name)))
         print("Trying to use clang as a fallback")
         compiler = "clang"
     use_ninja = config.get("use_ninja", False)
@@ -187,8 +168,8 @@ def get_cmake_preset_name(build_type):
 def build_and_verify(build_command, cpp_directory):
     max_attempts = 7 if use_ninja else 1
     if try_build(build_command, cpp_directory, max_attempts):
-        print(f"{GREEN}Successful C++ build{RESET} with {' '.join(build_command)}\n")
+        print(green_text("Successful C++ build") + " with {}".format(' '.join(build_command)) + '\n')
         return True
     else:
-        print(f"{RED}Failed to build C++{RESET} with {' '.join(build_command)}\n")
+        print(red_text("Failed to build C++") + " with {}".format(' '.join(build_command)) + '\n')
         return False

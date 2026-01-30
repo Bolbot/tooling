@@ -5,14 +5,10 @@ import os
 import subprocess
 import shutil
 
-from _text_colors import GREEN, YELLOW, RED, RESET
+from _text_colors import red_text, yellow_text, green_text
 
 
 optional_environment = None
-
-
-def python_in_venv():
-    return "Scripts/python.exe" if sys.platform == "win32" else "bin/python"
 
 
 def prime_uv():
@@ -96,7 +92,7 @@ def prime_environment(compiler):
     windows_specific_compiler = compiler == "msvc" or compiler == "clang-cl"
     if sys.platform != "win32":
         if windows_specific_compiler:
-            print(f"{RED}{compiler}{RESET} is Windows only. Consider using {GREEN}clang{RESET} instead")
+            print(red_text(compiler) + " is Windows only. Consider using " + green_text("clang") + " instead")
             sys.exit(1)
         else:
             return None
@@ -128,7 +124,7 @@ def get_profile_path(profiles_dir, profile_name):
     elif sys.platform == "darwin":
         profiles_dir /= "macos"
     else:
-        print("Unexpected platform. We support Windows (x64), MacOS (arm), and Linux (x64)")
+        print(red_text("Unexpected platform.") + " We support Windows (x64), MacOS (arm), and Linux (x64)")
         sys.exit(1)
 
     profile_path = profiles_dir / profile_name
@@ -165,5 +161,5 @@ def print_compiler_warning(compiler, windows_generator):
     if sys.platform != "win32" or not windows_generator:
         return
     if compiler != "clang-cl" and compiler != "msvc":
-        print(f"{YELLOW}MSVC Generator ignores {compiler}{RESET}\nCompatible compilers: msvc or clang-cl")
-        print(f"If you need {compiler}, try to use {GREEN}ninja{RESET} instead\n")
+        print(yellow_text("MSVC Generator ignores {})".format(compiler)) + "\nCompatible compilers: msvc or clang-cl")
+        print("If you need {}, try to use ".format(compiler) + green_text("ninja") + "instead\n")

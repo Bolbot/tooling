@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-from _text_colors import RED, YELLOW, GREEN, BLUE, RESET
+from _text_colors import blue_text
 import sys
 import shutil
 import subprocess
@@ -70,7 +70,7 @@ def main():
         # if there was last used, rebuild it, and bail; otherwise, fallback to the initial dual build later on
         build_type = get_last_used_config()
         if build_type:
-            print(f"{BLUE}Rebuilding {build_type}{RESET}")
+            print(blue_text("Rebuilding {}".format(build_type)))
             if cpp_directory:
                 build_cpp(cpp_directory, build_type)
             if rust_directory:
