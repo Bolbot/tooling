@@ -6,6 +6,7 @@ path = "cpp"
 # compiler can be set to: gcc, clang, msvc, clang-cl
 compiler = "clang"
 use_ninja = true
+shared_libs = false
 
 [rust]
 path = "rust"

@@ -10,6 +10,7 @@ from _paths import script_dir, profiles_dir, main_project, config_file, last_use
 config_contents = None
 compiler = ""
 use_ninja = False
+shared_libs = False
 
 
 def get_compiler():
@@ -144,6 +145,9 @@ def get_generate_command(cpp_directory, build_type):
         else:
             if compiler == "clang-cl":
                 result += ["-T", "ClangCL"]
+
+        if shared_libs:
+            result += ["-DBUILD_SHARED_LIBS=ON"]
         result += [f"-DCMAKE_C_COMPILER={c_compiler}", f"-DCMAKE_CXX_COMPILER={cpp_compiler}"]
         print_compiler_warning(compiler, not use_ninja)
 
@@ -152,13 +156,14 @@ def get_generate_command(cpp_directory, build_type):
 
 def update_cpp_config():
     config = load_config("cpp")
-    global compiler, use_ninja
+    global compiler, use_ninja, shared_libs
     compiler = config.get("compiler", "")
     if not compiler:
         print(yellow_text("compiler value was missing from {}".format(config_file.name)))
         print("Trying to use clang as a fallback")
         compiler = "clang"
     use_ninja = config.get("use_ninja", False)
+    shared_libs = config.get("shared_libs", False)
 
 
 def get_cmake_preset_name(build_type):
