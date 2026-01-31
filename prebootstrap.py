@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import sys
-from pathlib import Path
-import urllib.request
 import os
+import platform
+from pathlib import Path
 import subprocess
 import shutil
 
@@ -14,34 +14,47 @@ temp_venv = ".venv-temporary"
 
 
 def prime_uv():
-    platform = sys.platform
+    current_os = sys.platform
     tooling_path = main_project / ".tools"
-    uv_path = tooling_path / "uv" / ("uv.exe" if platform == "win32" else "uv")
+    uv_path = tooling_path / "uv" / ("uv.exe" if current_os == "win32" else "uv")
 
     if not uv_path.exists():
-        print("Obtaining local copy of uv...")
         tooling_path.mkdir(exist_ok=True)
 
         try:
             archive_name = {
                 "win32" : "uv-x86_64-pc-windows-msvc.zip",
-                "darwin": "uv-aarch64-apple-darwin.tar.gz",
+                "darwin": "uv-x86_64-apple-darwin.tar.gz" if platform.machine() == "x86_64"
+                     else "uv-aarch64-apple-darwin.tar.gz",
                 "linux" : "uv-x86_64-unknown-linux-gnu.tar.gz"
-            }[platform]
+            }[current_os]
         except KeyError:
-            print("Unexpected platform. We support Windows (x64), MacOS (arm), and Linux (x64)")
+            print(red_text("Unexpected OS!") + " We support Windows (x64), MacOS (arm or x64), and Linux (x64)")
             sys.exit(1)
         uv_url = "https://github.com/astral-sh/uv/releases/download/0.9.18/" + archive_name
-
         temp_archive = tooling_path / archive_name
-        urllib.request.urlretrieve(uv_url, str(temp_archive)) # we don't need curl actually
+        print("Downloading " + archive_name.split('.')[0] + " for " + platform.machine())
 
-        unpack_destination = tooling_path # Path
-        if platform == "win32":
+        try:
+            import urllib.request
+            urllib.request.urlretrieve(uv_url, str(temp_archive))
+        except Exception as download_error:
+            if shutil.which("curl"):
+                print(yellow_text("urllib failed: {}, ".format(download_error)) + "trying curl...")
+                res = subprocess.run(["curl", "-fL", uv_url, "-o", str(temp_archive)])
+                if res.returncode != 0:
+                    print(red_text("curl also failed: {}".format(res.stderr)))
+                    sys.exit(1)
+            else:
+                print(red_text("urllib failed: {}; no curl. Terminating. ".format(download_error)))
+                sys.exit(1)
+
+        unpack_destination = tooling_path
+        if current_os == "win32":
             unpack_destination = unpack_destination / "uv"
             unpack_destination.mkdir(exist_ok=True)
         subprocess.run(["tar", "-xvf", str(temp_archive), "-C", str(unpack_destination)], check=True)
-        if platform == "linux" or platform == "darwin": # TODO: check MacOS
+        if current_os == "linux" or current_os == "darwin":
             dir_path = str(temp_archive).rsplit('.', 2)[0] # remove .tar.gz
             dir_path = Path(dir_path).absolute()
             dir_path.rename(dir_path.parent / "uv")

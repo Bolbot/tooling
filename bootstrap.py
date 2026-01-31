@@ -4,7 +4,9 @@ from pathlib import Path
 import sys
 import subprocess
 import shutil
-from _platform_specific import prime_uv, prime_python, get_activation_hint
+
+from prebootstrap import prime_uv
+from _platform_specific import prime_python, get_activation_hint
 from _resource_manager import resolve_resource
 from _text_colors import red_text, yellow_text, green_text
 from _paths import main_project, venv_python, requirements
@@ -12,7 +14,7 @@ from _paths import main_project, venv_python, requirements
 
 def running_in_native_venv() -> bool:
     if sys.prefix == sys.base_prefix:
-        print(yellow_text("Not running in virtual environment")
+        print(yellow_text("Not running in virtual environment"))
         return False
     if Path(sys.executable).absolute() != venv_python:
         print(red_text("Running in unrelated virtual environment") + f"\n\texpected:  {venv_python}\n\tactual:    {str(sys.executable)}")
