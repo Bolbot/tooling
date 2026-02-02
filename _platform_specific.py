@@ -1,14 +1,10 @@
 import sys
 from pathlib import Path
-import urllib.request
 import os
 import subprocess
 import shutil
 
 from _text_colors import red_text, yellow_text, green_text
-
-
-optional_environment = None
 
 
 def prime_python(venv_python_path):
@@ -29,6 +25,7 @@ def get_activation_hint():
             "powershell:\t.\\.venv\\Scripts\\activate.ps1"
     else:
         return "source .venv/bin/activate"
+
 
 # TODO: generalize and reuse
 def get_lldb_hint():
@@ -95,13 +92,29 @@ def windows_proof_cmake_preset(build_type, use_ninja):
         return "conan-debug" if build_type == "Debug" else "conan-release"
 
 
+def windows_proof_cargo_target(rust_directory, compiler, use_ninja):
+    if sys.platform != "win32":
+        return None
+    if compiler == "msvc" or compiler == "clang-cl" or not use_ninja:
+        return None
+
+    target = "x86_64-pc-windows-gnu"
+    result = subprocess.run(["rustup", "target", "list", "--installed"], cwd=str(rust_directory), stdout=subprocess.PIPE, text=True)
+    if target not in result.stdout:
+        print(yellow_text(target + " is not installed, using default target, possible ABI incompatibility"))
+        print("To enable " + target + " run " + green_text("rustup target add " + target) + " from " + str(rust_directory))
+        return None
+    return target
+
+
+
 def try_build(build_command, cpp_directory, attempts):
     if attempts == 1 or sys.platform != "win32":
-        result = subprocess.run(build_command, cwd=cpp_directory)
+        result = subprocess.run(build_command, cwd=str(cpp_directory))
         return result.returncode == 0
 
     while True:
-        result = subprocess.run(build_command, cwd=cpp_directory, stdout=subprocess.PIPE, text=True)
+        result = subprocess.run(build_command, cwd=str(cpp_directory), stdout=subprocess.PIPE, text=True)
         attempts -= 1
 
         if "ninja: error: failed recompaction: Permission denied" in result.stdout and attempts > 0:
@@ -118,5 +131,5 @@ def print_compiler_warning(compiler, windows_generator):
     if sys.platform != "win32" or not windows_generator:
         return
     if compiler != "clang-cl" and compiler != "msvc":
-        print(yellow_text("MSVC Generator ignores {})".format(compiler)) + "\nCompatible compilers: msvc or clang-cl")
+        print(yellow_text("MSVC Generator ignores {}".format(compiler)) + "\nCompatible compilers: msvc or clang-cl")
         print("If you need {}, try to use ".format(compiler) + green_text("ninja") + " instead\n")

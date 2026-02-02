@@ -6,7 +6,7 @@ import sys
 import shutil
 import subprocess
 from _platform_specific import prime_environment
-from _resource_manager import get_conanfile, check_presence, get_verified_path, update_cpp_config
+from _resource_manager import get_cargo_target, get_conanfile, check_presence, get_verified_path, update_cpp_config
 from _resource_manager import build_and_verify, get_last_used_config, set_last_used_config
 from _resource_manager import get_cmake_preset_name, get_generate_command, get_compiler
 
@@ -18,7 +18,7 @@ def generate_cpp(cpp_directory, build_type):
     check_presence("cmake")
     generate_command = get_generate_command(cpp_directory, build_type)
     print(f"Generating C++ project: {' '.join(generate_command)}")
-    subprocess.run(generate_command, cwd=cpp_directory, check=True)
+    subprocess.run(generate_command, cwd=str(cpp_directory), check=True)
 
 
 def build_cpp(cpp_directory, build_type):
@@ -30,7 +30,7 @@ def build_cpp(cpp_directory, build_type):
     conanfile = get_conanfile(cpp_directory)
     if conanfile:
         cmake_preset = get_cmake_preset_name(build_type)
-        subprocess.run(["cmake", "--preset", cmake_preset], cwd=cpp_directory, check=True)
+        subprocess.run(["cmake", "--preset", cmake_preset], cwd=str(cpp_directory), check=True)
         build_command += ["--preset", "conan-debug" if build_type == "Debug" else "conan-release"]
     else:
         build_command += [str(build_dir), "--config", build_type]
@@ -49,10 +49,16 @@ def build_rust(rust_directory, build_type):
 
     check_presence("cargo")
 
+    build_command = ["cargo", "build"]
+
     if build_type == "Release":
-        subprocess.run(["cargo", "build", "--release"], cwd=rust_directory, check=True)
-    else:
-        subprocess.run(["cargo", "build"], cwd=rust_directory, check=True)
+        build_command.append("--release")
+
+    target = get_cargo_target(rust_directory)
+    if target:
+        build_command += ["--target", target]
+
+    subprocess.run(build_command, cwd=str(rust_directory), check=True)
 
 
 def main():

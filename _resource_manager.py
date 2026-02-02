@@ -2,7 +2,8 @@ from pathlib import Path
 import shutil
 import sys
 import tomllib
-from _platform_specific import get_profile_path, windows_proof_cmake_preset, try_build, print_compiler_warning
+from _platform_specific import get_profile_path, windows_proof_cmake_preset, windows_proof_cargo_target
+from _platform_specific import try_build, print_compiler_warning
 from _text_colors import blue_text, green_text, red_text, yellow_text
 from _paths import script_dir, profiles_dir, main_project, config_file, last_used
 
@@ -178,3 +179,11 @@ def build_and_verify(build_command, cpp_directory):
     else:
         print(red_text("Failed to build C++") + " with {}".format(' '.join(build_command)) + '\n')
         return False
+
+
+def get_cargo_target(rust_directory):
+    target = windows_proof_cargo_target(rust_directory, compiler, use_ninja)
+    if target:
+        relative_path = Path(rust_directory.resolve() / "target" / target).relative_to(main_project.resolve())
+        print("Using a non-default target for building rust. See the build in " + blue_text(str(relative_path)))
+    return target
