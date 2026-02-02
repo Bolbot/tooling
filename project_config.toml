@@ -7,6 +7,8 @@ path = "cpp"
 compiler = "clang"
 use_ninja = true
 shared_libs = false
+# targets per the first argument of add_library or add_executable
+targets = [ "all" ]
 
 [rust]
 path = "rust"

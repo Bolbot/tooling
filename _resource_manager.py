@@ -2,6 +2,7 @@ from pathlib import Path
 import shutil
 import sys
 import tomllib
+import subprocess
 from _platform_specific import get_profile_path, windows_proof_cmake_preset, windows_proof_cargo_target
 from _platform_specific import try_build, print_compiler_warning
 from _text_colors import blue_text, green_text, red_text, yellow_text
@@ -12,6 +13,7 @@ config_contents = None
 compiler = ""
 use_ninja = False
 shared_libs = False
+targets = None
 
 
 def get_compiler():
@@ -155,9 +157,30 @@ def get_generate_command(cpp_directory, build_type):
     return result
 
 
+def get_build_command(cpp_directory, build_type):
+    build_dir = cpp_directory / "build" / build_type
+    print(f"Building {build_type} C++ in {build_dir}")
+
+    build_command = ["cmake", "--build"]
+
+    conanfile = get_conanfile(cpp_directory)
+    if conanfile:
+        cmake_preset = get_cmake_preset_name(build_type)
+        subprocess.run(["cmake", "--preset", cmake_preset], cwd=str(cpp_directory), check=True)
+        build_command += ["--preset", "conan-debug" if build_type == "Debug" else "conan-release"]
+    else:
+        build_command += [str(build_dir), "--config", build_type]
+
+    if targets:
+        build_command.append("--target")
+        build_command += targets
+
+    return build_command
+
+
 def update_cpp_config():
     config = load_config("cpp")
-    global compiler, use_ninja, shared_libs
+    global compiler, use_ninja, shared_libs, targets
     compiler = config.get("compiler", "")
     if not compiler:
         print(yellow_text("compiler value was missing from {}".format(config_file.name)))
@@ -165,6 +188,7 @@ def update_cpp_config():
         compiler = "clang"
     use_ninja = config.get("use_ninja", False)
     shared_libs = config.get("shared_libs", False)
+    targets = config.get("targets", ["all"])
 
 
 def get_cmake_preset_name(build_type):
