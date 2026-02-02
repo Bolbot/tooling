@@ -31,7 +31,7 @@ def prime_uv():
         except KeyError:
             print(red_text("Unexpected OS!") + " We support Windows (x64), MacOS (arm or x64), and Linux (x64)")
             sys.exit(1)
-        uv_url = "https://github.com/astral-sh/uv/releases/download/0.9.18/" + archive_name
+        uv_url = "https://github.com/astral-sh/uv/releases/download/0.9.28/" + archive_name
         temp_archive = tooling_path / archive_name
         print("Downloading " + archive_name.split('.')[0] + " for " + platform.machine())
 
