@@ -6,9 +6,10 @@ import sys
 import shutil
 import subprocess
 from _platform_specific import prime_environment
-from _resource_manager import get_cargo_target, check_presence, get_verified_path, update_cpp_config
+from _resource_manager import update_project_config, check_presence, get_verified_path
+from _resource_manager import get_compiler, get_generate_command, get_build_command
+from _resource_manager import get_cargo_target, get_cargo_features
 from _resource_manager import build_and_verify, get_last_used_config, set_last_used_config
-from _resource_manager import get_generate_command, get_build_command, get_compiler
 
 
 success = True
@@ -44,6 +45,11 @@ def build_rust(build_type):
     if target:
         build_command += ["--target", target]
 
+    features = get_cargo_features(rust_directory)
+    if features:
+        build_command += ["--features", ','.join(features)]
+
+    print("Building Rust project: " + ' '.join(build_command))
     subprocess.run(build_command, cwd=str(rust_directory), check=True)
 
 
@@ -72,7 +78,7 @@ def main():
     global cpp_directory, rust_directory
     cpp_directory = get_verified_path("cpp")
     rust_directory = get_verified_path("rust")
-    update_cpp_config()
+    update_project_config()
     prime_environment(get_compiler())
 
     arguments = argparse.ArgumentParser()

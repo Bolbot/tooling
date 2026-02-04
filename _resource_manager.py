@@ -14,6 +14,7 @@ compiler = ""
 use_ninja = False
 shared_libs = False
 targets = None
+features = None
 
 
 def get_compiler():
@@ -178,17 +179,21 @@ def get_build_command(cpp_directory, build_type):
     return build_command
 
 
-def update_cpp_config():
-    config = load_config("cpp")
-    global compiler, use_ninja, shared_libs, targets
-    compiler = config.get("compiler", "")
+def update_project_config():
+    global compiler, use_ninja, shared_libs, targets, features
+
+    cpp_config = load_config("cpp")
+    compiler = cpp_config.get("compiler", "")
     if not compiler:
         print(yellow_text("compiler value was missing from {}".format(config_file.name)))
         print("Trying to use clang as a fallback")
         compiler = "clang"
-    use_ninja = config.get("use_ninja", False)
-    shared_libs = config.get("shared_libs", False)
-    targets = config.get("targets", ["all"])
+    use_ninja   = cpp_config.get("use_ninja", False)
+    shared_libs = cpp_config.get("shared_libs", False)
+    targets     = cpp_config.get("targets", ["all"])
+
+    rust_config = load_config("rust")
+    features = rust_config.get("features")
 
 
 def get_cmake_preset_name(build_type):
@@ -211,3 +216,7 @@ def get_cargo_target(rust_directory):
         relative_path = Path(rust_directory.resolve() / "target" / target).relative_to(main_project.resolve())
         print("Using a non-default target for building rust. See the build in " + blue_text(str(relative_path)))
     return target
+
+
+def get_cargo_features(rust_directory):
+    return features

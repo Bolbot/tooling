@@ -12,6 +12,7 @@ targets = [ "all" ]
 
 [rust]
 path = "rust"
+features = [ "" ]
 
 [test]
 path = "your_test_script.py"
