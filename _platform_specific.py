@@ -108,13 +108,13 @@ def windows_proof_cargo_target(rust_directory, compiler, use_ninja):
 
 
 
-def try_build(build_command, cpp_directory, attempts):
+def try_build(build_command, cmake_directory, attempts):
     if attempts == 1 or sys.platform != "win32":
-        result = subprocess.run(build_command, cwd=str(cpp_directory))
+        result = subprocess.run(build_command, cwd=str(cmake_directory))
         return result.returncode == 0
 
     while True:
-        result = subprocess.run(build_command, cwd=str(cpp_directory), stdout=subprocess.PIPE, text=True)
+        result = subprocess.run(build_command, cwd=str(cmake_directory), stdout=subprocess.PIPE, text=True)
         attempts -= 1
 
         if "ninja: error: failed recompaction: Permission denied" in result.stdout and attempts > 0:

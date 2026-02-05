@@ -28,7 +28,7 @@ Initial run via python provides necessary config files. From there on, you can u
 The settings are stored in `project_config.toml`:
 ```toml
 # all paths are relative to the project root directory
-# rust section can be removed for C++-only project and vice-versa
+# rust section can be removed for cmake-only project and vice-versa
 
 [cpp]
 path = "cpp"
@@ -105,6 +105,9 @@ rm -rf tooling
 git checkout @ -- tooling
 ```
 
+The shell you use for running just commands is expected to be sh-aware. If it isn't, you have two options:
+* Add a directory with sh to your environment PATH (for instance, `C:\Program Files\Git\bin` comes with git)
+* Modify .justfile according to [just documentation](https://github.com/casey/just?tab=readme-ov-file#shell)
 
 ## Old Python
 

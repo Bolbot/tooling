@@ -9,15 +9,15 @@ alias r := release
 build:
     python tooling/build.py || python3 tooling/build.py
 
-[doc("Cleans the temporary build artifacts for C++ and Rust")]
+[doc("Cleans the temporary build artifacts for CMake and Rust")]
 clean:
     python tooling/build.py --clean || python3 tooling/build.py --clean
 
-[doc("Builds Debug configuration for C++ and Rust")]
+[doc("Builds Debug configuration for CMake and Rust")]
 debug:
     python tooling/build.py --config=Debug || python3 tooling/build.py --config=Debug
 
-[doc("Builds Release configuration for C++ and Rust")]
+[doc("Builds Release configuration for CMake and Rust")]
 release:
     python tooling/build.py --config=Release || python3 tooling/build.py --config=Release
 

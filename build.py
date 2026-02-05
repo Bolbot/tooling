@@ -13,22 +13,22 @@ from _resource_manager import build_and_verify, get_last_used_config, set_last_u
 
 
 success = True
-cpp_directory = None
+cmake_directory = None
 rust_directory = None
 
 
-def generate_cpp(build_type):
+def generate_cmake(build_type):
     check_presence("cmake")
-    generate_command = get_generate_command(cpp_directory, build_type)
-    print("Generating C++ project: " + ' '.join(generate_command))
-    subprocess.run(generate_command, cwd=str(cpp_directory), check=True)
+    generate_command = get_generate_command(cmake_directory, build_type)
+    print("Generating CMake project: " + ' '.join(generate_command))
+    subprocess.run(generate_command, cwd=str(cmake_directory), check=True)
 
 
-def build_cpp(build_type):
-    build_command = get_build_command(cpp_directory, build_type)
-    print("Building C++ project: " + ' '.join(build_command))
+def build_cmake(build_type):
+    build_command = get_build_command(cmake_directory, build_type)
+    print("Building CMake project: " + ' '.join(build_command))
 
-    if not build_and_verify(build_command, cpp_directory):
+    if not build_and_verify(build_command, cmake_directory):
         global success
         success = False
 
@@ -55,12 +55,12 @@ def build_rust(build_type):
 
 def clean_build_artifacts():
     print("Deleting the following paths:")
-    if cpp_directory:
-        cpp_build_dir = cpp_directory / "build"
-        if cpp_build_dir.exists():
-            print("C++:  " + str(cpp_build_dir))
-            shutil.rmtree(cpp_build_dir)
-        disposable_presets = cpp_directory / "CMakeUserPresets.json"
+    if cmake_directory:
+        cmake_build_dir = cmake_directory / "build"
+        if cmake_build_dir.exists():
+            print("CMake:  " + str(cmake_build_dir))
+            shutil.rmtree(cmake_build_dir)
+        disposable_presets = cmake_directory / "CMakeUserPresets.json"
         if disposable_presets.exists():
             print("      " + str(disposable_presets))
             disposable_presets.unlink()
@@ -68,15 +68,15 @@ def clean_build_artifacts():
     if rust_directory:
         rust_build_dir = rust_directory / "target"
         if rust_build_dir.exists():
-            print("Rust: " + str(rust_build_dir))
+            print("Rust:   " + str(rust_build_dir))
             shutil.rmtree(rust_build_dir)
 
     set_last_used_config(None)
 
 
 def main():
-    global cpp_directory, rust_directory
-    cpp_directory = get_verified_path("cpp")
+    global cmake_directory, rust_directory
+    cmake_directory = get_verified_path("cmake")
     rust_directory = get_verified_path("rust")
 
     arguments = argparse.ArgumentParser()
@@ -96,8 +96,8 @@ def main():
         build_type = get_last_used_config()
         if build_type:
             print(blue_text("Rebuilding " + build_type))
-            if cpp_directory:
-                build_cpp(build_type)
+            if cmake_directory:
+                build_cmake(build_type)
             if rust_directory:
                 build_rust(build_type)
             if success:
@@ -108,9 +108,9 @@ def main():
 
     build_configs = [specified_arguments.config] if specified_arguments.config else ["Release", "Debug"]
     for build_type in build_configs:
-        if cpp_directory:
-            generate_cpp(build_type)
-            build_cpp(build_type)
+        if cmake_directory:
+            generate_cmake(build_type)
+            build_cmake(build_type)
 
         if rust_directory:
             build_rust(build_type)

@@ -49,7 +49,7 @@ def main():
     subprocess.run([local_uv, "pip", "install", "-r", str(requirements)], check=True, cwd=str(main_project))
 
     if requires_activation:
-        print(f"\n\nDon't forget to activate your virtual environment:\n" + green_text(get_activation_hint()))
+        print("\n\nDon't forget to activate your virtual environment:\n" + green_text(get_activation_hint()))
 
 
 if __name__ == "__main__":

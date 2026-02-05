@@ -1,7 +1,7 @@
 # all paths are relative to the project root directory
-# rust section can be removed for C++-only project and vice-versa
+# rust section can be removed for cmake-only project and vice-versa
 
-[cpp]
+[cmake]
 path = "cpp"
 # compiler can be set to: gcc, clang, msvc, clang-cl
 compiler = "clang"

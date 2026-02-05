@@ -11,7 +11,7 @@ from _paths import script_dir, profiles_dir, main_project, config_file, last_use
 
 config_contents = None
 
-# C/C++
+# CMake
 compiler = ""
 use_ninja = False
 shared_libs = False
@@ -33,11 +33,11 @@ def get_conan_profile():
     profile_path = get_profile_path(profiles_dir, profile_name)
 
     if profile_path.resolve().exists():
-        print(f"Conan profile:\t\t{profile_path}")
+        print("Conan profile:\t\t{}".format(str(profile_path)))
         return str(profile_path.resolve())
     else:
         print(red_text("Conan profile does not exist: ") + str(profile_path))
-        print("Make sure {} contains valid compiler value in cpp section".format(str(config_file)))
+        print("Make sure {} contains valid compiler value in cmake section".format(str(config_file)))
         sys.exit(1)
 
 
@@ -71,7 +71,7 @@ def get_verified_path(section):
         print("Make sure your " + yellow_text(config_file.name) + " specifies proper relative paths")
         sys.exit(1)
 
-    if section == "cpp" and not (path / "CMakeLists.txt").exists():
+    if section == "cmake" and not (path / "CMakeLists.txt").exists():
         print(red_text("No CMakeLists.txt") + " in " + str(path))
         print("Check the path in {} section of your {}".format(section, config_file.name))
         sys.exit(1)
@@ -118,17 +118,17 @@ def set_last_used_config(build_type):
         last_used.unlink()
 
 
-def get_conanfile(cpp_directory):
-    result = cpp_directory / "conanfile.txt"
+def get_conanfile(cmake_directory):
+    result = cmake_directory / "conanfile.txt"
     if result.exists():
         return result
-    result = cpp_directory / "conanfile.py"
+    result = cmake_directory / "conanfile.py"
     return result if result.exists() else None
 
 
-def get_generate_command(cpp_directory, build_type):
-    build_dir = cpp_directory / "build" / build_type
-    print(f"C++ build directory:\t{build_dir}")
+def get_generate_command(cmake_directory, build_type):
+    build_dir = cmake_directory / "build" / build_type
+    print("CMake build directory:\t{}".format(str(build_dir)))
 
     result = []
 
@@ -144,13 +144,13 @@ def get_generate_command(cpp_directory, build_type):
     if use_ninja:
         check_presence("ninja")
 
-    conanfile = get_conanfile(cpp_directory)
+    conanfile = get_conanfile(cmake_directory)
     if conanfile:
         check_presence("conan")
         conan_profile = get_conan_profile()
-        result += ["conan", "install", ".", "--build=missing", "--profile", conan_profile, "--settings", f"build_type={build_type}"]
+        result += ["conan", "install", ".", "--build=missing", "--profile", conan_profile, "--settings", "build_type={}".format(build_type)]
     else:
-        result += ["cmake", f"-DCMAKE_BUILD_TYPE:STRING={build_type}", "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE",
+        result += ["cmake", "-DCMAKE_BUILD_TYPE:STRING={}".format(build_type), "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE",
             "--no-warn-unused-cli", "-S", ".", "-B", str(build_dir)]
         if use_ninja:
             result += ["-G", "Ninja"]
@@ -163,22 +163,22 @@ def get_generate_command(cpp_directory, build_type):
 
         if shared_libs:
             result += ["-DBUILD_SHARED_LIBS=ON"]
-        result += [f"-DCMAKE_C_COMPILER={c_compiler}", f"-DCMAKE_CXX_COMPILER={cpp_compiler}"]
+        result += ["-DCMAKE_C_COMPILER={}".format(c_compiler), "-DCMAKE_CXX_COMPILER={}".format(cpp_compiler)]
         print_compiler_warning(compiler, not use_ninja)
 
     return result
 
 
-def get_build_command(cpp_directory, build_type):
-    build_dir = cpp_directory / "build" / build_type
-    print(f"Building {build_type} C++ in {build_dir}")
+def get_build_command(cmake_directory, build_type):
+    build_dir = cmake_directory / "build" / build_type
+    print("Building {} CMake in {}".format(build_type, str(build_dir)))
 
     build_command = ["cmake", "--build"]
 
-    conanfile = get_conanfile(cpp_directory)
+    conanfile = get_conanfile(cmake_directory)
     if conanfile:
         cmake_preset = get_cmake_preset_name(build_type)
-        subprocess.run(["cmake", "--preset", cmake_preset], cwd=str(cpp_directory), check=True)
+        subprocess.run(["cmake", "--preset", cmake_preset], cwd=str(cmake_directory), check=True)
         build_command += ["--preset", "conan-debug" if build_type == "Debug" else "conan-release"]
     else:
         build_command += [str(build_dir), "--config", build_type]
@@ -199,35 +199,35 @@ def update_project_config():
     else:
         legacy_build = migration_config.get("legacy_build", False)
 
-    cpp_config = load_config("cpp", True)
-    if cpp_config:
-        compiler = cpp_config.get("compiler", "")
+    cmake_config = load_config("cmake", True)
+    if cmake_config:
+        compiler = cmake_config.get("compiler", "")
         if not compiler:
             print(yellow_text("compiler value was missing from {}".format(config_file.name)))
             print("Trying to use clang as a fallback")
             compiler = "clang"
-        use_ninja   = cpp_config.get("use_ninja", False)
-        shared_libs = cpp_config.get("shared_libs", False)
-        targets     = cpp_config.get("targets", ["all"])
+        use_ninja   = cmake_config.get("use_ninja", False)
+        shared_libs = cmake_config.get("shared_libs", False)
+        targets     = cmake_config.get("targets", ["all"])
 
     rust_config = load_config("rust", True)
     if rust_config:
-        features = rust_config.get("features")
+        features = [f for f in rust_config.get("features", []) if f]
         if legacy_build:
-            features.append("legacy_build")
+            features += ["legacy-build"]
 
 
 def get_cmake_preset_name(build_type):
     return windows_proof_cmake_preset(build_type, use_ninja)
 
 
-def build_and_verify(build_command, cpp_directory):
+def build_and_verify(build_command, cmake_directory):
     max_attempts = 7 if use_ninja else 1
-    if try_build(build_command, cpp_directory, max_attempts):
-        print(green_text("Successful C++ build") + " with {}".format(' '.join(build_command)) + '\n')
+    if try_build(build_command, cmake_directory, max_attempts):
+        print(green_text("Successful CMake build") + " with {}".format(' '.join(build_command)) + '\n')
         return True
     else:
-        print(red_text("Failed to build C++") + " with {}".format(' '.join(build_command)) + '\n')
+        print(red_text("Failed to build CMake") + " with {}".format(' '.join(build_command)) + '\n')
         return False
 
 
