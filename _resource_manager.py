@@ -10,11 +10,18 @@ from _paths import script_dir, profiles_dir, main_project, config_file, last_use
 
 
 config_contents = None
+
+# C/C++
 compiler = ""
 use_ninja = False
 shared_libs = False
+
+# Rust
 targets = None
 features = None
+
+# Interop
+legacy_build = False
 
 
 def get_compiler():
@@ -76,7 +83,7 @@ def get_verified_path(section):
     return path
 
 
-def load_config(section):
+def load_config(section, warn=False):
     global config_contents
     if not config_contents:
         if not config_file.exists():
@@ -86,9 +93,9 @@ def load_config(section):
         config_contents = tomllib.loads(config_file.read_text())
 
     section_config = config_contents.get(section)
-    if not section_config:
+    if not section_config and warn:
         print(yellow_text("Skipping {}".format(section)) + " because it was missing in " + config_file.name)
-        return None
+
     return section_config
 
 
@@ -143,12 +150,16 @@ def get_generate_command(cpp_directory, build_type):
         conan_profile = get_conan_profile()
         result += ["conan", "install", ".", "--build=missing", "--profile", conan_profile, "--settings", f"build_type={build_type}"]
     else:
-        result += ["cmake", "-S", ".", "-B", str(build_dir), f"-DCMAKE_BUILD_TYPE={build_type}", "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"]
+        result += ["cmake", f"-DCMAKE_BUILD_TYPE:STRING={build_type}", "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE",
+            "--no-warn-unused-cli", "-S", ".", "-B", str(build_dir)]
         if use_ninja:
             result += ["-G", "Ninja"]
         else:
             if compiler == "clang-cl":
                 result += ["-T", "ClangCL"]
+
+        if legacy_build:
+            result += ["-DLEGACY_BUILD=ON"]
 
         if shared_libs:
             result += ["-DBUILD_SHARED_LIBS=ON"]
@@ -180,20 +191,30 @@ def get_build_command(cpp_directory, build_type):
 
 
 def update_project_config():
-    global compiler, use_ninja, shared_libs, targets, features
+    global compiler, use_ninja, shared_libs, targets, features, legacy_build
+    migration_config = load_config("migration")
+    if not migration_config:
+        print(yellow_text("No [migration] section in project_config.toml") +
+            "\n(Optional) Delete project_config.toml and rerun " + green_text("just setup") + " for the updated fallback")
+    else:
+        legacy_build = migration_config.get("legacy_build", False)
 
-    cpp_config = load_config("cpp")
-    compiler = cpp_config.get("compiler", "")
-    if not compiler:
-        print(yellow_text("compiler value was missing from {}".format(config_file.name)))
-        print("Trying to use clang as a fallback")
-        compiler = "clang"
-    use_ninja   = cpp_config.get("use_ninja", False)
-    shared_libs = cpp_config.get("shared_libs", False)
-    targets     = cpp_config.get("targets", ["all"])
+    cpp_config = load_config("cpp", True)
+    if cpp_config:
+        compiler = cpp_config.get("compiler", "")
+        if not compiler:
+            print(yellow_text("compiler value was missing from {}".format(config_file.name)))
+            print("Trying to use clang as a fallback")
+            compiler = "clang"
+        use_ninja   = cpp_config.get("use_ninja", False)
+        shared_libs = cpp_config.get("shared_libs", False)
+        targets     = cpp_config.get("targets", ["all"])
 
-    rust_config = load_config("rust")
-    features = rust_config.get("features")
+    rust_config = load_config("rust", True)
+    if rust_config:
+        features = rust_config.get("features")
+        if legacy_build:
+            features.append("legacy_build")
 
 
 def get_cmake_preset_name(build_type):

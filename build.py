@@ -78,8 +78,6 @@ def main():
     global cpp_directory, rust_directory
     cpp_directory = get_verified_path("cpp")
     rust_directory = get_verified_path("rust")
-    update_project_config()
-    prime_environment(get_compiler())
 
     arguments = argparse.ArgumentParser()
     arguments.add_argument("--clean", action="store_true")
@@ -89,6 +87,9 @@ def main():
     if specified_arguments.clean:
         clean_build_artifacts()
         return
+
+    update_project_config()
+    prime_environment(get_compiler())
 
     if len(sys.argv) == 1:
         # no explicit argument - building the last successful config or fall back to both Release and Debug
