@@ -1,16 +1,21 @@
 # Tooling
 
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
+
+## Overview
+
 **Tooling** is a set of scripts that facilitate workflow on C/C++/Rust projects.\
 It's intended to be a submodule of a project.
 
 ## Prerequisites
 
-* **Python 3.11**¹ is required
-* **just** 1.23+ is optional but highly recommended²
+ [![python](https://img.shields.io/badge/python-3.11+-green.svg)](https://www.python.org/downloads/release/python-3110/)
+ [![just](https://img.shields.io/badge/just-1.23-green.svg)](https://github.com/casey/just) 
+
+* Fairly modern **Python** is required but we can support Python 3.5. See the [Old Python](#old-python) section
+* **Just** 1.23+ is optional but highly recommended. It's easy to install with `cargo install just`
 * C/C++ or Rust environment is already implied
 
-1. Can support Python 3.5, see the Old Python section
-2. Easy to install with `cargo install just`
 
 ## How to add
 
@@ -30,14 +35,21 @@ The settings are stored in `project_config.toml`:
 # all paths are relative to the project root directory
 # rust section can be removed for cmake-only project and vice-versa
 
-[cpp]
+[cmake]
 path = "cpp"
 # compiler can be set to: gcc, clang, msvc, clang-cl
 compiler = "clang"
 use_ninja = true
+shared_libs = false
+# targets per the first argument of add_library or add_executable
+targets = [ "all" ]
 
 [rust]
 path = "rust"
+features = [ "" ]
+
+[migration]
+legacy_build = false
 
 [test]
 path = "your_test_script.py"
@@ -92,6 +104,10 @@ Don't forget to run `deactivate` if that venv was active.
 `.justfile`, `project_config.toml`, and `requirements.txt` are your project-specific files. Feel free to edit and commit them.
 
 
+> [!NOTE]
+> If you set `legacy_build` to true, your Rust project is expected to have (at least a dummy) `legacy-build` feature.
+
+
 ## Troubleshooting
 
 Read the messages, they usually contain
@@ -111,7 +127,7 @@ The shell you use for running just commands is expected to be sh-aware. If it is
 
 ## Old Python
 
-If your python is dated, such as 3.8, you will need an extra script: `prebootstrap.py`
+If your python is dated, such as [![python](https://img.shields.io/badge/python-3.8+-yellow.svg)](https://www.python.org/downloads/release/python-380/), you will need an extra script: `prebootstrap.py`
 
 Run it with your python, activate the .venv-temporary environment, then proceed as usual.
 
@@ -121,4 +137,13 @@ Run it with your python, activate the .venv-temporary environment, then proceed 
 That extra run of `prebootstrap.py` is only required once, then you can activate the usual .venv as needed.
 
 > [!WARNING]
-> Python 3.5 is the oldest supported version
+> [![python](https://img.shields.io/badge/python-3.5-orange.svg)](https://www.python.org/downloads/release/python-350/) is the oldest supported version
+
+
+## License
+
+This project is licensed under the *BSD 3-Clause License*.
+
+**Copyright © 2026 Bohdan Bolbot**
+
+See the [LICENSE](LICENSE) file for the complete terms, or learn more about this license at [opensource.org](https://opensource.org/licenses/BSD-3-Clause).
