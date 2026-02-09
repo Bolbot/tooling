@@ -51,8 +51,8 @@ alias z := zed
 
 [doc("Launches Visual Studio Code from the project's root directory")]
 vscode:
-    code .
+    python tooling/launchIDE.py --vscode || python3 tooling/launchIDE.py --vscode
 
 [doc("Launches Zed from the project's root directory")]
 zed:
-    zed . > /dev/null &
+    python tooling/launchIDE.py --zed || python3 tooling/launchIDE.py --zed

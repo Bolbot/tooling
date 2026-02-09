@@ -49,19 +49,20 @@ def prime_environment(compiler):
             print(red_text(compiler) + " is Windows only. Consider using " + green_text("clang") + " instead")
             sys.exit(1)
         else:
-            return None
-
-    if not windows_specific_compiler:
-        return None
+            return
 
     vswhere = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
     if not vswhere.exists():
-        return None
+        if windows_specific_compiler:
+            print(yellow_text("No Visual Studio installation found") + " make sure you have a copy of Visual Studio to use " + compiler)
+        return
 
     vs_path = subprocess.run([str(vswhere), "-property", "installationPath"], capture_output=True, text=True)
     activator_path = Path(vs_path.stdout.strip()).resolve() / "VC" / "Auxiliary" / "Build" / "vcvars64.bat"
     if not activator_path.exists():
-        return None
+        if windows_specific_compiler:
+            print(yellow_text("Could not activate vcvars64.bat to use ") + compiler)
+        return
 
     msv_updates = subprocess.run(["cmd.exe", "/c", str(activator_path), "&&", "set"], capture_output=True, text=True)
     for line in msv_updates.stdout.split('\n'):
