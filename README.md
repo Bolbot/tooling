@@ -14,6 +14,7 @@ It's intended to be a submodule of a project.
 
 * Fairly modern **Python** is required but we can support Python 3.5. See the [Old Python](#old-python) section
 * **Just** 1.23+ is optional but highly recommended. It's easy to install with `cargo install just`
+* Shell aware of **sh** to run *just* commands. If `sh --version` fails, see [Shell without sh](#shell-without-sh) section
 * C/C++ or Rust environment is already implied
 
 
@@ -103,7 +104,6 @@ Don't forget to run `deactivate` if that venv was active.
 
 `.justfile`, `project_config.toml`, and `requirements.txt` are your project-specific files. Feel free to edit and commit them.
 
-
 > [!NOTE]
 > If you set `legacy_build` to true, your Rust project is expected to have (at least a dummy) `legacy-build` feature.
 
@@ -115,17 +115,20 @@ Read the messages, they usually contain
 * $${\color{yellow}warnings \space printed \space in \space yellow}$$
 * $${\color{green}actionable \space suggestions \space printed \space in \space green}$$
 
+### Submodule integrity
+
 If integrity of your tooling submodule is compromised, you can always remove and restore it:
-```bash
-rm -rf tooling
-git checkout @ -- tooling
-```
+1. Delete tooling directory
+2. ```git checkout @ -- tooling```
 
-The shell you use for running just commands is expected to be sh-aware. If it isn't, you have two options:
-* Add a directory with sh to your environment PATH (for instance, `C:\Program Files\Git\bin` comes with git)
-* Modify .justfile according to [just documentation](https://github.com/casey/just?tab=readme-ov-file#shell)
+### Shell without sh
 
-## Old Python
+The shell you use for running just commands is expected to be sh-aware. Linux and MacOS usually have it by default.\
+For Windows, you have two options:
+* Add a directory with `sh.exe` to your environment PATH (`C:\Program Files\Git\bin` is provided with git installation) **(recommended)**
+* Modify .justfile according to [just documentation](https://github.com/casey/just?tab=readme-ov-file#shell) if you prefer powershell or cmd
+
+### Old Python
 
 If your python is dated, such as [![python](https://img.shields.io/badge/python-3.8+-yellow.svg)](https://www.python.org/downloads/release/python-380/), you will need an extra script: `prebootstrap.py`
 
