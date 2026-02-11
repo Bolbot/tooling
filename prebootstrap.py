@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import shutil
 
-from _paths import main_project
+from _paths import main_project, tooling_path
 from _text_colors import red_text, green_text, blue_text, yellow_text
 
 temp_venv = ".venv-temporary"
@@ -15,7 +15,6 @@ temp_venv = ".venv-temporary"
 
 def prime_uv():
     current_os = sys.platform
-    tooling_path = main_project / ".tools"
     uv_path = tooling_path / "uv" / ("uv.exe" if current_os == "win32" else "uv")
 
     if not uv_path.exists():

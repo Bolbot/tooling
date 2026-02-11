@@ -34,7 +34,7 @@ setup:
 
 [doc("Removes the entire tooling; last resort for troubleshooting")]
 teardown:
-    rm -rf .venv .tools
+    python tooling/bootstrap.py --clean || python3 tooling/bootstrap.py --clean
 
 
 # Validation part
